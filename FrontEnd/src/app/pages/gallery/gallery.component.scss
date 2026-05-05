@@ -1,0 +1,12 @@
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 72px);
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #DAA520;
+  }
+}

@@ -1,5 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
@@ -26,17 +25,22 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
-app.use(session({
-  secret: Credentials.SESSION_SECRET,
+const sessionConfig = {
+  secret: Credentials.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
   cookie: {
     secure: Credentials.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
-}));
+};
+
+if (Credentials.MONGO_URI) {
+  sessionConfig.store = MongoStore.create({ mongoUrl: Credentials.MONGO_URI });
+}
+
+app.use(session(sessionConfig));
 
 app.use('/api', apiRouter);
 
