@@ -3,23 +3,36 @@
   padding: 4px;
 }
 
-.page-header {
+.event-header {
   text-align: center;
-  padding: 2.5rem 1rem 1.5rem;
+  padding: 2rem 1rem 1.5rem;
+  animation: slideUp 0.5s ease both;
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #a1a1aa;
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #daa520;
+    }
+  }
 
   h1 {
     font-size: 2.2rem;
     font-weight: 700;
     color: #daa520;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
-  .subtitle {
-    font-size: 0.95rem;
+  .image-count {
+    font-size: 0.9rem;
     color: #a1a1aa;
-    max-width: 450px;
-    margin: 0 auto;
-    line-height: 1.5;
   }
 
   @media (max-width: 640px) {
@@ -51,7 +64,7 @@
   margin-bottom: 4px;
   overflow: hidden;
   border-radius: 2px;
-  background-color: #1B1B1F;
+  background-color: #1b1b1f;
   opacity: 0;
   transform: translateY(30px) scale(0.95);
   transition: opacity 0.6s ease, transform 0.6s ease;
@@ -82,7 +95,7 @@
     background-color: rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: #FFFFFF;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -109,7 +122,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: #DAA520;
+  background-color: #daa520;
   border: none;
   color: #131317;
   display: flex;
@@ -131,7 +144,7 @@
   }
 }
 
-// Initial load spinner
+// Initial load spinner (matches home page)
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -168,26 +181,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 72px);
+  min-height: 40vh;
   gap: 1rem;
 }
 
 .state-message {
-  color: #A1A1AA;
+  color: #a1a1aa;
   font-size: 1.2rem;
 }
 
-.retry-btn {
-  background-color: #DAA520;
-  color: #131317;
-  border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: #c4911a;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

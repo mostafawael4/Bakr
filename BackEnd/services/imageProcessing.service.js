@@ -25,7 +25,7 @@ export async function processImage(inputPath, baseName, outputDir, onProgress) {
 
     // TODO: Upload to B2 here
 
-    results[key] = `/uploads/home/${outputFilename}`;
+    results[key] = `/${outputDir.replace(/\\/g, '/')}/${outputFilename}`;
 
     if (onProgress) onProgress(suffix);
   }

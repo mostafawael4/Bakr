@@ -1,41 +1,35 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren, ViewChild } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { GalleryService, GalleryEvent, GalleryImage } from '../../services/gallery.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
-
-interface HomeImage {
-  _id: string;
-  url: string;
-  thumbnail: string | null;
-  medium: string | null;
-  hero: string | null;
-  originalName: string;
-}
+import { environment } from '../../../environments/environment';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-gallery-detail',
   standalone: true,
-  imports: [CommonModule, ConfirmDialogComponent, UploadModalComponent],
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss'],
+  imports: [CommonModule, RouterLink, ConfirmDialogComponent, UploadModalComponent],
+  templateUrl: './gallery-detail.component.html',
+  styleUrls: ['./gallery-detail.component.scss'],
 })
-export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  private http = inject(HttpClient);
+export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy {
+  private route = inject(ActivatedRoute);
   private platformId = inject(PLATFORM_ID);
-  authService = inject(AuthService);
+  private galleryService = inject(GalleryService);
   private wsService = inject(WebSocketService);
+  authService = inject(AuthService);
 
   @ViewChildren('gridItem') gridItems!: QueryList<ElementRef>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  images: HomeImage[] = [];
+  event: GalleryEvent | null = null;
+  images: GalleryImage[] = [];
   loading = true;
-  error = false;
+  eventId = '';
 
   uploadState: UploadState = {
     visible: false,
@@ -49,22 +43,35 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     failCount: 0,
   };
 
-  deleteTarget: HomeImage | null = null;
+  deleteTarget: GalleryImage | null = null;
   showDeleteDialog = false;
 
   private observer: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
+  private routeSub: Subscription | null = null;
+  private gridSub: Subscription | null = null;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
 
   ngOnInit(): void {
-    this.fetchImages();
+    this.routeSub = this.route.paramMap.subscribe((params) => {
+      const id = params.get('id') || '';
+      if (id !== this.eventId) {
+        this.observer?.disconnect();
+        this.observer = null;
+        this.eventId = id;
+        this.event = null;
+        this.images = [];
+      }
+      this.fetchEvent();
+    });
+
     if (this.isBrowser) {
       this.wsService.connect();
       this.wsSub = this.wsService.messages$.subscribe((msg) => {
-        if (msg.type === 'upload-progress') {
+        if (msg.type === 'gallery-upload-progress' && msg.eventId === this.eventId) {
           this.uploadState = {
             ...this.uploadState,
             currentFile: msg.current,
@@ -87,16 +94,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     if (this.isBrowser) {
       this.setupObserver();
-      this.gridItems.changes.subscribe(() => this.observeItems());
+      this.gridSub = this.gridItems.changes.subscribe(() => this.observeItems());
     }
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
+    this.routeSub?.unsubscribe();
+    this.gridSub?.unsubscribe();
     this.observer?.disconnect();
   }
 
   private setupObserver(): void {
+    if (!this.isBrowser) return;
+    this.observer?.disconnect();
     this.observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -112,31 +123,40 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private observeItems(): void {
+    if (!this.observer) {
+      this.setupObserver();
+    }
     this.gridItems?.forEach((item) => {
-      this.observer?.observe(item.nativeElement);
+      const el = item.nativeElement;
+      if (!el.classList.contains('visible')) {
+        this.observer?.observe(el);
+      }
     });
   }
 
-  /** Run after the grid is in the DOM so IntersectionObserver picks up items and CSS delays apply. */
+  /** Grid mounts after async load; schedule observe so IntersectionObserver runs like on home. */
   private scheduleObserveGrid(): void {
     if (!this.isBrowser || this.images.length === 0) return;
     queueMicrotask(() => {
+      this.observeItems();
       setTimeout(() => this.observeItems(), 0);
     });
   }
 
-  private fetchImages(): void {
+  private fetchEvent(): void {
+    if (!this.eventId) {
+      this.loading = false;
+      return;
+    }
     this.loading = true;
-    this.error = false;
-
-    this.http.get<{ ok: boolean; images: HomeImage[] }>(`${environment.apiUrl}/home`).subscribe({
+    this.galleryService.getEvent(this.eventId).subscribe({
       next: (res) => {
+        this.event = res.event;
         this.images = res.images;
         this.loading = false;
         this.scheduleObserveGrid();
       },
       error: () => {
-        this.error = true;
         this.loading = false;
       },
     });
@@ -172,7 +192,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       formData.append('images', input.files[i]);
     }
 
-    this.http.post<{ ok: boolean; images: any[] }>(`${environment.apiUrl}/home/upload`, formData, { withCredentials: true }).subscribe({
+    this.galleryService.uploadImages(this.eventId, formData).subscribe({
       next: () => {
         input.value = '';
       },
@@ -189,37 +209,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onUploadDismissed(): void {
     this.uploadState = { ...this.uploadState, visible: false };
-    this.fetchImages();
+    this.fetchEvent();
   }
 
-  private buildStatusLabel(step: string, current: number, total: number): string {
-    if (step === 'saved') return `Saving ${current}/${total}...`;
-    if (step === 'thumb') return `Processing thumbnail (${current}/${total})`;
-    if (step === 'medium') return `Processing medium (${current}/${total})`;
-    if (step === 'hero') return `Processing hero (${current}/${total})`;
-    if (step === 'complete') return `Processed ${current}/${total}`;
-    return 'Uploading...';
-  }
-
-  private calcPercent(step: string, current: number, total: number): number {
-    const stepsPerFile = 5;
-    const stepMap: Record<string, number> = { uploading: 0, saved: 1, thumb: 2, medium: 3, hero: 4, complete: 5 };
-    const fileProgress = (stepMap[step] ?? 0) / stepsPerFile;
-    return Math.round(((current - 1 + fileProgress) / total) * 100);
-  }
-
-  askDelete(image: HomeImage): void {
+  askDelete(image: GalleryImage): void {
     this.deleteTarget = image;
     this.showDeleteDialog = true;
   }
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
-    const id = this.deleteTarget._id;
+    const imageId = this.deleteTarget._id;
 
-    this.http.delete(`${environment.apiUrl}/home/${id}`, { withCredentials: true }).subscribe({
+    this.galleryService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
-        this.images = this.images.filter(img => img._id !== id);
+        this.images = this.images.filter(img => img._id !== imageId);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
       },
@@ -241,7 +245,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${environment.apiUrl.replace('/api', '')}${path}`;
   }
 
-  getSrcset(image: HomeImage): string {
+  getSrcset(image: GalleryImage): string {
     const parts: string[] = [];
     if (image.thumbnail) parts.push(`${this.getFullUrl(image.thumbnail)} 400w`);
     if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
@@ -249,7 +253,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return parts.join(', ');
   }
 
-  retry(): void {
-    this.fetchImages();
+  private buildStatusLabel(step: string, current: number, total: number): string {
+    if (step === 'saved') return `Saving ${current}/${total}...`;
+    if (step === 'thumb') return `Processing thumbnail (${current}/${total})`;
+    if (step === 'medium') return `Processing medium (${current}/${total})`;
+    if (step === 'hero') return `Processing hero (${current}/${total})`;
+    if (step === 'complete') return `Processed ${current}/${total}`;
+    return 'Uploading...';
+  }
+
+  private calcPercent(step: string, current: number, total: number): number {
+    const stepsPerFile = 5;
+    const stepMap: Record<string, number> = { uploading: 0, saved: 1, thumb: 2, medium: 3, hero: 4, complete: 5 };
+    const fileProgress = (stepMap[step] ?? 0) / stepsPerFile;
+    return Math.round(((current - 1 + fileProgress) / total) * 100);
   }
 }

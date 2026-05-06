@@ -24,6 +24,15 @@ export function saveHomeFile(buffer, filename) {
   // TODO: Replace with B2 upload when ready
 }
 
+export function saveGalleryFile(buffer, filename, eventFolder) {
+  const dir = path.join('uploads', 'gallery', eventFolder);
+  mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, filename);
+  writeFileSync(filePath, buffer);
+  return `/uploads/gallery/${eventFolder}/${filename}`;
+  // TODO: Replace with B2 upload when ready
+}
+
 // TODO: Replace with B2 when ready
 
 console.log('[UploadService] loaded');
