@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { mkdirSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,6 +13,15 @@ export async function saveFile(destPath, buffer) {
   mkdirSync(dir, { recursive: true });
   await fs.writeFile(destPath, buffer);
   return destPath;
+}
+
+export function saveHomeFile(buffer, filename) {
+  const dir = path.join('uploads', 'home');
+  mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, filename);
+  writeFileSync(filePath, buffer);
+  return `/uploads/home/${filename}`;
+  // TODO: Replace with B2 upload when ready
 }
 
 // TODO: Replace with B2 when ready

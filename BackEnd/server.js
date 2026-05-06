@@ -42,6 +42,8 @@ if (Credentials.MONGO_URI) {
 
 app.use(session(sessionConfig));
 
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api', apiRouter);
 
 app.use((err, req, res, next) => {
