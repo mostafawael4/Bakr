@@ -1,3 +1,40 @@
-<div class="page">
-  <h1>Home</h1>
-</div>
+<!-- Loading skeletons -->
+@if (loading) {
+  <div class="skeleton-masonry">
+    @for (item of [1,2,3,4,5,6,7,8,9,10]; track item) {
+      <div class="skeleton"></div>
+    }
+  </div>
+}
+
+<!-- Error state -->
+@if (!loading && error) {
+  <div class="state-container">
+    <p class="state-message">Failed to load images</p>
+    <button class="retry-btn" (click)="retry()">Try Again</button>
+  </div>
+}
+
+<!-- Empty state -->
+@if (!loading && !error && images.length === 0) {
+  <div class="state-container">
+    <p class="state-message">No images yet</p>
+  </div>
+}
+
+<!-- Masonry image grid -->
+@if (!loading && !error && images.length > 0) {
+  <div class="masonry">
+    @for (image of images; track image._id; let i = $index) {
+      <div class="grid-item" #gridItem [style.--delay]="(i % 8) * 0.08 + 's'">
+        <img
+          [src]="getFullUrl(image.medium || image.url)"
+          [srcset]="getSrcset(image)"
+          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+          [alt]="image.originalName"
+          loading="lazy"
+        />
+      </div>
+    }
+  </div>
+}

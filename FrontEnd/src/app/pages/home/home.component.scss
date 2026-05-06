@@ -1,12 +1,109 @@
-.page {
+:host {
+  display: block;
+  padding: 4px;
+}
+
+.masonry {
+  column-count: 2;
+  column-gap: 4px;
+
+  @media (min-width: 768px) {
+    column-count: 3;
+  }
+
+  @media (min-width: 1280px) {
+    column-count: 4;
+  }
+}
+
+.grid-item {
+  break-inside: avoid;
+  margin-bottom: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: #1B1B1F;
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: var(--delay, 0s);
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+
+  &:hover img {
+    transform: scale(1.03);
+  }
+}
+
+.skeleton-masonry {
+  column-count: 2;
+  column-gap: 4px;
+
+  @media (min-width: 768px) {
+    column-count: 3;
+  }
+
+  @media (min-width: 1280px) {
+    column-count: 4;
+  }
+}
+
+.skeleton {
+  break-inside: avoid;
+  margin-bottom: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #1B1B1F 25%, #2a2a2f 50%, #1B1B1F 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+
+  &:nth-child(odd) {
+    height: 280px;
+  }
+
+  &:nth-child(even) {
+    height: 200px;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.state-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 72px);
+  gap: 1rem;
+}
 
-  h1 {
-    font-size: 3rem;
-    font-weight: 700;
-    color: #DAA520;
+.state-message {
+  color: #A1A1AA;
+  font-size: 1.2rem;
+}
+
+.retry-btn {
+  background-color: #DAA520;
+  color: #131317;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #c4911a;
   }
 }

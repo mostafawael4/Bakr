@@ -25,36 +25,43 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.post('/upload', requireAdminAuth, upload.single('image'), async (req, res, next) => {
+router.post('/upload', requireAdminAuth, upload.array('images'), async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ ok: false, message: 'No image file provided' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ ok: false, message: 'No image files provided' });
     }
 
-    if (!allowedExtensions.images.includes(req.file.mimetype)) {
-      return res.status(400).json({ ok: false, message: 'Invalid file type. Allowed: JPEG, PNG, WebP, AVIF' });
+    const invalidFile = req.files.find(f => !allowedExtensions.images.includes(f.mimetype));
+    if (invalidFile) {
+      return res.status(400).json({ ok: false, message: `Invalid file type: ${invalidFile.originalname}. Allowed: JPEG, PNG, WebP, AVIF` });
     }
 
-    const uniqueFilename = generateUniqueFilename(req.file.originalname);
-    const url = saveHomeFile(req.file.buffer, uniqueFilename);
+    const savedImages = [];
 
-    const image = await Home.create({
-      filename: uniqueFilename,
-      originalName: req.file.originalname,
-      url,
-      size: req.file.size,
-    });
+    for (const file of req.files) {
+      const uniqueFilename = generateUniqueFilename(file.originalname);
+      const url = saveHomeFile(file.buffer, uniqueFilename);
 
-    const localDiskPath = path.join('uploads', 'home', uniqueFilename);
-    const baseName = path.basename(uniqueFilename, path.extname(uniqueFilename));
+      const image = await Home.create({
+        filename: uniqueFilename,
+        originalName: file.originalname,
+        url,
+        size: file.size,
+      });
 
-    processImage(localDiskPath, baseName, 'uploads/home')
-      .then(({ thumbnail, medium, hero }) =>
-        Home.updateOne({ filename: uniqueFilename }, { $set: { thumbnail, medium, hero } })
-      )
-      .catch(err => logger.error('[ImageProcessing] Background error:', err));
+      savedImages.push(image);
 
-    res.status(201).json({ ok: true, image });
+      const localDiskPath = path.join('uploads', 'home', uniqueFilename);
+      const baseName = path.basename(uniqueFilename, path.extname(uniqueFilename));
+
+      processImage(localDiskPath, baseName, 'uploads/home')
+        .then(({ thumbnail, medium, hero }) =>
+          Home.updateOne({ filename: uniqueFilename }, { $set: { thumbnail, medium, hero } })
+        )
+        .catch(err => logger.error('[ImageProcessing] Background error:', err));
+    }
+
+    res.status(201).json({ ok: true, images: savedImages });
   } catch (err) {
     next(err);
   }
