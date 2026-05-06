@@ -1,4 +1,24 @@
-<app-navbar />
-<main class="main-content">
-  <router-outlet />
-</main>
+<!-- Splash screen -->
+@if (!appReady) {
+  <div class="splash-overlay" [class.fade-out]="appReady">
+    <div class="splash-content">
+      <img src="images/logo.png" alt="Bakr" class="splash-logo" />
+      <p class="splash-message">Capturing your precious moments</p>
+      <div class="splash-loader">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- App content -->
+@if (appReady) {
+  @if (showNavbar) {
+    <app-navbar />
+  }
+  <main [class.main-content]="showNavbar">
+    <router-outlet />
+  </main>
+}

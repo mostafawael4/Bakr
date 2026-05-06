@@ -64,6 +64,27 @@
       }
     }
   }
+
+  .logout-item {
+    margin-left: 0.5rem;
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid #3F3F46;
+    color: #A1A1AA;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+  }
 }
 
 .menu-toggle {
@@ -139,6 +160,18 @@
 
       &:last-child {
         border-bottom: none;
+      }
+
+      &.logout-item {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-bottom: none;
+
+        .logout-btn {
+          width: 100%;
+          padding: 0.75rem;
+          font-size: 1rem;
+        }
       }
     }
   }

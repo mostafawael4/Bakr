@@ -26,6 +26,11 @@
       <li>
         <a routerLink="/feedbacks" routerLinkActive="active" (click)="closeMenu()">Feedbacks</a>
       </li>
+      @if (authService.isLoggedIn) {
+        <li class="logout-item">
+          <button class="logout-btn" (click)="logout()">Logout</button>
+        </li>
+      }
     </ul>
   </div>
 </nav>

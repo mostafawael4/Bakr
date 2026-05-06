@@ -6,5 +6,6 @@ export const routes: Routes = [
   { path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then(m => m.GalleryComponent) },
   { path: 'events', loadComponent: () => import('./pages/events/events.component').then(m => m.EventsComponent) },
   { path: 'feedbacks', loadComponent: () => import('./pages/feedbacks/feedbacks.component').then(m => m.FeedbacksComponent) },
+  { path: 'admin', loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) },
   { path: '**', redirectTo: '' },
 ];
