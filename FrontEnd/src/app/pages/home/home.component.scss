@@ -3,6 +3,7 @@
   padding: 4px;
 }
 
+// Masonry grid
 .masonry {
   column-count: 2;
   column-gap: 4px;
@@ -17,6 +18,7 @@
 }
 
 .grid-item {
+  position: relative;
   break-inside: avoid;
   margin-bottom: 4px;
   overflow: hidden;
@@ -42,8 +44,66 @@
   &:hover img {
     transform: scale(1.03);
   }
+
+  .delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #ef4444;
+      border-color: #ef4444;
+    }
+  }
+
+  &:hover .delete-btn {
+    opacity: 1;
+  }
 }
 
+// FAB upload button
+.fab-upload {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #DAA520;
+  border: none;
+  color: #131317;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(218, 165, 32, 0.4);
+  transition: all 0.2s ease;
+  z-index: 100;
+
+  &:hover {
+    background-color: #c4911a;
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(218, 165, 32, 0.5);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Skeletons
 .skeleton-masonry {
   column-count: 2;
   column-gap: 4px;
@@ -79,6 +139,7 @@
   100% { background-position: -200% 0; }
 }
 
+// States
 .state-container {
   display: flex;
   flex-direction: column;

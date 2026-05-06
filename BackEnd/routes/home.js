@@ -7,6 +7,7 @@ import { requireAdminAuth } from '../middleware/auth.js';
 import allowedExtensions from '../config/allowed_extensions.js';
 import { saveHomeFile, generateUniqueFilename } from '../services/upload.service.js';
 import { processImage } from '../services/imageProcessing.service.js';
+import { broadcast } from '../config/ws-server.js';
 import logger from '../utils/logger.js';
 
 const upload = multer({
@@ -37,8 +38,10 @@ router.post('/upload', requireAdminAuth, upload.array('images'), async (req, res
     }
 
     const savedImages = [];
+    const total = req.files.length;
 
-    for (const file of req.files) {
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
       const uniqueFilename = generateUniqueFilename(file.originalname);
       const url = saveHomeFile(file.buffer, uniqueFilename);
 
@@ -51,13 +54,40 @@ router.post('/upload', requireAdminAuth, upload.array('images'), async (req, res
 
       savedImages.push(image);
 
+      broadcast({
+        type: 'upload-progress',
+        filename: file.originalname,
+        step: 'saved',
+        current: i + 1,
+        total,
+      });
+
       const localDiskPath = path.join('uploads', 'home', uniqueFilename);
       const baseName = path.basename(uniqueFilename, path.extname(uniqueFilename));
 
-      processImage(localDiskPath, baseName, 'uploads/home')
+      const onProgress = (step) => {
+        broadcast({
+          type: 'upload-progress',
+          filename: file.originalname,
+          step,
+          current: i + 1,
+          total,
+        });
+      };
+
+      processImage(localDiskPath, baseName, 'uploads/home', onProgress)
         .then(({ thumbnail, medium, hero }) =>
           Home.updateOne({ filename: uniqueFilename }, { $set: { thumbnail, medium, hero } })
         )
+        .then(() => {
+          broadcast({
+            type: 'upload-progress',
+            filename: file.originalname,
+            step: 'complete',
+            current: i + 1,
+            total,
+          });
+        })
         .catch(err => logger.error('[ImageProcessing] Background error:', err));
     }
 

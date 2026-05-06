@@ -1,0 +1,140 @@
+.upload-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.upload-modal {
+  background-color: #1B1B1F;
+  border: 1px solid #3F3F46;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  animation: scaleIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.upload-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin-bottom: 1.25rem;
+
+  &.spinning {
+    color: #DAA520;
+    background-color: rgba(218, 165, 32, 0.1);
+    animation: spin 1s linear infinite;
+  }
+
+  &.done {
+    color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 0.4rem;
+}
+
+.upload-subtitle {
+  color: #A1A1AA;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.upload-status {
+  color: #DAA520;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #131317;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #DAA520, #f0c040);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #A1A1AA;
+
+  .percent {
+    color: #DAA520;
+    font-weight: 600;
+  }
+}
+
+.upload-results {
+  margin: 1rem 0 1.5rem;
+}
+
+.result-success {
+  color: #22c55e;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.result-fail {
+  color: #ef4444;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.dismiss-btn {
+  background-color: #DAA520;
+  color: #131317;
+  border: none;
+  padding: 0.75rem 2.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #c4911a;
+    transform: translateY(-1px);
+  }
+}

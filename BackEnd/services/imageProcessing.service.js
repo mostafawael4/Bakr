@@ -9,7 +9,7 @@ const SIZES = {
   hero: { width: 2000, suffix: 'hero' },
 };
 
-export async function processImage(inputPath, baseName, outputDir) {
+export async function processImage(inputPath, baseName, outputDir, onProgress) {
   await fs.mkdir(outputDir, { recursive: true });
 
   const results = {};
@@ -26,6 +26,8 @@ export async function processImage(inputPath, baseName, outputDir) {
     // TODO: Upload to B2 here
 
     results[key] = `/uploads/home/${outputFilename}`;
+
+    if (onProgress) onProgress(suffix);
   }
 
   return results;
