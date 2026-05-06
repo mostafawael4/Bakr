@@ -3,6 +3,34 @@
   padding: 4px;
 }
 
+.page-header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #daa520;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    color: #a1a1aa;
+    max-width: 450px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    padding: 1.5rem 1rem 1rem;
+
+    h1 {
+      font-size: 1.6rem;
+    }
+  }
+}
+
 // Masonry grid
 .masonry {
   column-count: 2;
