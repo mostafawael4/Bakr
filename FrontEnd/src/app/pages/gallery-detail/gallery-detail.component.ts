@@ -8,11 +8,12 @@ import { WebSocketService } from '../../services/websocket.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
 import { environment } from '../../../environments/environment';
+import { ImageLightboxComponent, ImageLightboxSlide } from '../../components/image-lightbox/image-lightbox.component';
 
 @Component({
   selector: 'app-gallery-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ConfirmDialogComponent, UploadModalComponent],
+  imports: [CommonModule, RouterLink, ConfirmDialogComponent, UploadModalComponent, ImageLightboxComponent],
   templateUrl: './gallery-detail.component.html',
   styleUrls: ['./gallery-detail.component.scss'],
 })
@@ -45,6 +46,9 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   deleteTarget: GalleryImage | null = null;
   showDeleteDialog = false;
+
+  lightboxOpen = false;
+  lightboxStart = 0;
 
   private observer: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
@@ -251,6 +255,33 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
     if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
     return parts.join(', ');
+  }
+
+  get lightboxSlides(): ImageLightboxSlide[] {
+    return this.images.map((img) => ({
+      src: this.getFullUrl(img.hero || img.medium || img.url),
+      srcset: this.getLightboxSrcset(img),
+      alt: img.originalName,
+    }));
+  }
+
+  private getLightboxSrcset(image: GalleryImage): string {
+    const parts: string[] = [];
+    if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
+    if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
+    if (!image.hero && !image.medium && image.url) {
+      parts.push(`${this.getFullUrl(image.url)} 2400w`);
+    }
+    return parts.join(', ');
+  }
+
+  openLightbox(index: number): void {
+    this.lightboxStart = index;
+    this.lightboxOpen = true;
+  }
+
+  closeLightbox(): void {
+    this.lightboxOpen = false;
   }
 
   private buildStatusLabel(step: string, current: number, total: number): string {

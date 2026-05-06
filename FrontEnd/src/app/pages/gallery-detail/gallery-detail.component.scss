@@ -69,6 +69,7 @@
   transform: translateY(30px) scale(0.95);
   transition: opacity 0.6s ease, transform 0.6s ease;
   transition-delay: var(--delay, 0s);
+  cursor: pointer;
 
   &.visible {
     opacity: 1;

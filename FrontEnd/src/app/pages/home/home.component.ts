@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
+import { ImageLightboxComponent, ImageLightboxSlide } from '../../components/image-lightbox/image-lightbox.component';
 
 interface HomeImage {
   _id: string;
@@ -20,7 +21,7 @@ interface HomeImage {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ConfirmDialogComponent, UploadModalComponent],
+  imports: [CommonModule, ConfirmDialogComponent, UploadModalComponent, ImageLightboxComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -51,6 +52,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   deleteTarget: HomeImage | null = null;
   showDeleteDialog = false;
+
+  lightboxOpen = false;
+  lightboxStart = 0;
 
   private observer: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
@@ -247,6 +251,33 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
     if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
     return parts.join(', ');
+  }
+
+  get lightboxSlides(): ImageLightboxSlide[] {
+    return this.images.map((img) => ({
+      src: this.getFullUrl(img.hero || img.medium || img.url),
+      srcset: this.getLightboxSrcset(img),
+      alt: img.originalName,
+    }));
+  }
+
+  private getLightboxSrcset(image: HomeImage): string {
+    const parts: string[] = [];
+    if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
+    if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
+    if (!image.hero && !image.medium && image.url) {
+      parts.push(`${this.getFullUrl(image.url)} 2400w`);
+    }
+    return parts.join(', ');
+  }
+
+  openLightbox(index: number): void {
+    this.lightboxStart = index;
+    this.lightboxOpen = true;
+  }
+
+  closeLightbox(): void {
+    this.lightboxOpen = false;
   }
 
   retry(): void {

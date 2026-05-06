@@ -1,0 +1,65 @@
+@if (visible && slides.length > 0 && current) {
+  <div
+    class="lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image gallery"
+    (click)="onBackdropClick()"
+  >
+    <button
+      type="button"
+      class="lightbox-close"
+      aria-label="Close"
+      (click)="close(); $event.stopPropagation()"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+
+    @if (slides.length > 1) {
+      <button
+        type="button"
+        class="lightbox-nav lightbox-prev"
+        aria-label="Previous image"
+        [disabled]="activeIndex === 0"
+        (click)="prev(); $event.stopPropagation()"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="lightbox-nav lightbox-next"
+        aria-label="Next image"
+        [disabled]="activeIndex === slides.length - 1"
+        (click)="next(); $event.stopPropagation()"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    }
+
+    <div
+      class="lightbox-stage"
+      (click)="$event.stopPropagation()"
+      (touchstart)="onTouchStart($event)"
+      (touchend)="onTouchEnd($event)"
+    >
+      <img
+        [src]="current.src"
+        [attr.srcset]="current.srcset || null"
+        sizes="100vw"
+        [alt]="current.alt"
+        decoding="async"
+      />
+      @if (slides.length > 1) {
+        <div class="lightbox-counter" aria-live="polite">
+          {{ activeIndex + 1 }} <span class="sep">/</span> {{ slides.length }}
+        </div>
+      }
+    </div>
+  </div>
+}
