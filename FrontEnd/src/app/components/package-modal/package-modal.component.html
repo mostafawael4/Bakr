@@ -1,0 +1,64 @@
+@if (visible) {
+  <div class="modal-overlay" (click)="close()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEdit ? 'Edit Package' : 'Create Package' }}</h2>
+        <button class="close-btn" (click)="close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form (ngSubmit)="submit()" class="modal-form">
+        <div class="form-group">
+          <label for="name">Package Name</label>
+          <input id="name" type="text" [(ngModel)]="form.name" name="name" placeholder="e.g. Full day package" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="hours">Hours</label>
+            <input id="hours" type="number" [(ngModel)]="form.hours" name="hours" min="1" required />
+          </div>
+          <div class="form-group">
+            <label for="price">Price</label>
+            <input id="price" type="number" [(ngModel)]="form.price" name="price" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="currency">Currency</label>
+            <input id="currency" type="text" [(ngModel)]="form.currency" name="currency" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" [(ngModel)]="form.description" name="description" rows="3" placeholder="e.g. including Abo bakr and 2 photographers"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="photographers">Photographers</label>
+            <input id="photographers" type="number" [(ngModel)]="form.photographers" name="photographers" min="1" />
+          </div>
+          <div class="form-group">
+            <label for="order">Display Order</label>
+            <input id="order" type="number" [(ngModel)]="form.order" name="order" min="0" />
+          </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="form.includesMainPhotographer" name="includesMainPhotographer" />
+            <span>Includes main photographer</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="close()">Cancel</button>
+          <button type="submit" class="btn-save">{{ isEdit ? 'Update' : 'Create' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
