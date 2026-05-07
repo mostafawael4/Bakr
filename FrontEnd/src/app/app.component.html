@@ -19,7 +19,7 @@
     @if (showNavbar) {
       <app-navbar />
     }
-    <main [class.main-content]="showNavbar">
+    <main [class.main-content]="showNavbar" [class.page-reveal]="isAnimating">
       <router-outlet />
     </main>
     @if (showNavbar) {

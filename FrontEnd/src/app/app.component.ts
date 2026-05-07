@@ -18,6 +18,8 @@ export class AppComponent implements OnInit {
   authService = inject(AuthService);
   showNavbar = true;
   appReady = false;
+  currentUrl = '';
+  isAnimating = false;
 
   ngOnInit(): void {
     this.authService.checkSession();
@@ -33,8 +35,18 @@ export class AppComponent implements OnInit {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event) => {
-      const url = (event as NavigationEnd).urlAfterRedirects;
-      this.showNavbar = !url.startsWith('/admin');
+      const navEnd = event as NavigationEnd;
+      this.currentUrl = navEnd.urlAfterRedirects;
+      this.showNavbar = !this.currentUrl.startsWith('/admin');
+      
+      // Trigger page animation
+      this.isAnimating = false;
+      setTimeout(() => this.isAnimating = true, 50);
+
+      // Secondary safety for scroll to top
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+      }
     });
   }
 }

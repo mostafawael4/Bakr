@@ -10,6 +10,19 @@
   min-height: 0;
 }
 
+.page-reveal {
+  animation: pageReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pageReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .splash-overlay {
   position: fixed;
   inset: 0;
