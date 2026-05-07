@@ -10,6 +10,21 @@
   padding: 0 1.5rem;
   animation: slideUp 0.5s ease both;
 
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-nav);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-interactive);
+    }
+  }
+
   h1 {
     font-size: 2.5rem;
     font-weight: 300;

@@ -30,6 +30,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
   event: GalleryEvent | null = null;
   images: GalleryImage[] = [];
   loading = true;
+  collectionId = '';
   eventId = '';
 
   uploadState: UploadState = {
@@ -61,7 +62,8 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
-      const id = params.get('id') || '';
+      this.collectionId = params.get('collectionId') || '';
+      const id = params.get('eventId') || '';
       if (id !== this.eventId) {
         this.observer?.disconnect();
         this.observer = null;

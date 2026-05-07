@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GalleryEvent } from '../../services/gallery.service';
+import { GalleryEvent, GalleryCollection } from '../../services/gallery.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-gallery-event-modal',
@@ -12,7 +13,8 @@ import { GalleryEvent } from '../../services/gallery.service';
 })
 export class GalleryEventModalComponent implements OnChanges {
   @Input() visible = false;
-  @Input() editEvent: GalleryEvent | null = null;
+  @Input() editEvent: GalleryEvent | GalleryCollection | null = null;
+  @Input() mode: 'collection' | 'event' = 'event';
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<FormData>();
 
@@ -24,10 +26,22 @@ export class GalleryEventModalComponent implements OnChanges {
     return this.editEvent !== null;
   }
 
+  get entityLabel(): string {
+    return this.mode === 'collection' ? 'Collection' : 'Event';
+  }
+
+  get namePlaceholder(): string {
+    return this.mode === 'collection' ? 'e.g. Wedding, Films' : 'e.g. Ahmed & Sara';
+  }
+
+  get nameLabel(): string {
+    return this.mode === 'collection' ? 'Collection Name' : 'Event Name (Bride & Groom)';
+  }
+
   ngOnChanges(): void {
     if (this.editEvent) {
       this.name = this.editEvent.name;
-      this.coverPreview = this.editEvent.coverImage;
+      this.coverPreview = this.toFullUrl(this.editEvent.coverImage);
     } else {
       this.reset();
     }
@@ -60,5 +74,11 @@ export class GalleryEventModalComponent implements OnChanges {
     this.name = '';
     this.coverFile = null;
     this.coverPreview = null;
+  }
+
+  private toFullUrl(path: string | null): string | null {
+    if (!path) return null;
+    if (path.startsWith('http') || path.startsWith('blob:')) return path;
+    return `${environment.apiUrl.replace('/api', '')}${path}`;
   }
 }

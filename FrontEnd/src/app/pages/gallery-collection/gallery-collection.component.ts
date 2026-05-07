@@ -1,34 +1,37 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { GalleryService, GalleryCollection } from '../../services/gallery.service';
+import { GalleryService, GalleryCollection, GalleryEvent } from '../../services/gallery.service';
 import { GalleryEventModalComponent } from '../../components/gallery-event-modal/gallery-event-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
-  selector: 'app-gallery',
+  selector: 'app-gallery-collection',
   standalone: true,
   imports: [CommonModule, RouterLink, GalleryEventModalComponent, ConfirmDialogComponent],
-  templateUrl: './gallery.component.html',
-  styleUrls: ['./gallery.component.scss'],
+  templateUrl: './gallery-collection.component.html',
+  styleUrls: ['./gallery-collection.component.scss'],
 })
-export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
+export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
   private galleryService = inject(GalleryService);
   private platformId = inject(PLATFORM_ID);
 
   @ViewChildren('cardItem') cardItems!: QueryList<ElementRef>;
 
-  collections: GalleryCollection[] = [];
+  collection: GalleryCollection | null = null;
+  events: GalleryEvent[] = [];
   loading = true;
+  collectionId = '';
 
   showModal = false;
-  editTarget: GalleryCollection | null = null;
+  editTarget: GalleryEvent | null = null;
 
-  deleteTarget: GalleryCollection | null = null;
+  deleteTarget: GalleryEvent | null = null;
   showDeleteDialog = false;
 
   private observer: IntersectionObserver | null = null;
@@ -39,7 +42,8 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.fetchCollections();
+    this.collectionId = this.route.snapshot.paramMap.get('collectionId') || '';
+    this.fetchEvents();
   }
 
   ngAfterViewInit(): void {
@@ -84,18 +88,23 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scheduleObserve(): void {
-    if (!this.isBrowser || this.collections.length === 0) return;
+    if (!this.isBrowser || this.events.length === 0) return;
     queueMicrotask(() => {
       this.observeItems();
       setTimeout(() => this.observeItems(), 0);
     });
   }
 
-  private fetchCollections(): void {
+  private fetchEvents(): void {
+    if (!this.collectionId) {
+      this.loading = false;
+      return;
+    }
     this.loading = true;
-    this.galleryService.getCollections().subscribe({
+    this.galleryService.getCollectionEvents(this.collectionId).subscribe({
       next: (res) => {
-        this.collections = res.collections;
+        this.collection = res.collection;
+        this.events = res.events;
         this.loading = false;
         this.scheduleObserve();
       },
@@ -110,10 +119,10 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showModal = true;
   }
 
-  openEdit(collection: GalleryCollection, e: MouseEvent): void {
+  openEdit(event: GalleryEvent, e: MouseEvent): void {
     e.stopPropagation();
     e.preventDefault();
-    this.editTarget = collection;
+    this.editTarget = event;
     this.showModal = true;
   }
 
@@ -124,35 +133,35 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onModalSaved(formData: FormData): void {
     if (this.editTarget) {
-      this.galleryService.updateCollection(this.editTarget._id, formData).subscribe({
+      this.galleryService.updateEvent(this.editTarget._id, formData).subscribe({
         next: () => {
           this.showModal = false;
           this.editTarget = null;
-          this.fetchCollections();
+          this.fetchEvents();
         },
       });
     } else {
-      this.galleryService.createCollection(formData).subscribe({
+      this.galleryService.createEvent(this.collectionId, formData).subscribe({
         next: () => {
           this.showModal = false;
-          this.fetchCollections();
+          this.fetchEvents();
         },
       });
     }
   }
 
-  askDelete(collection: GalleryCollection, e: MouseEvent): void {
+  askDelete(event: GalleryEvent, e: MouseEvent): void {
     e.stopPropagation();
     e.preventDefault();
-    this.deleteTarget = collection;
+    this.deleteTarget = event;
     this.showDeleteDialog = true;
   }
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
-    this.galleryService.deleteCollection(this.deleteTarget._id).subscribe({
+    this.galleryService.deleteEvent(this.deleteTarget._id).subscribe({
       next: () => {
-        this.collections = this.collections.filter(c => c._id !== this.deleteTarget!._id);
+        this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
       },
