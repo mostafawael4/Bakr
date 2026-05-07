@@ -1,6 +1,6 @@
 :host {
   display: block;
-  padding: 4px clamp(1.25rem, 5vw, 3rem);
+  padding: 4px clamp(2rem, 10vw, 8rem);
 }
 
 .scroll-reveal {
@@ -214,7 +214,7 @@
   line-height: 1.82;
   color: var(--color-body);
 
-  > p {
+  >p {
     margin: 0 0 1rem;
 
     &:last-child {
@@ -375,13 +375,11 @@
   width: min(5rem, 28vw);
   height: 1px;
   margin: clamp(2rem, 6vw, 2.75rem) auto;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(168, 148, 120, 0.45) 35%,
-    rgba(168, 148, 120, 0.45) 65%,
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(168, 148, 120, 0.45) 35%,
+      rgba(168, 148, 120, 0.45) 65%,
+      transparent);
 
   &--soft {
     opacity: 0.55;
@@ -439,6 +437,7 @@
 
 .home-gallery {
   margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  padding: 0 clamp(2rem, 10vw, 8rem);
 
   &__head {
     display: flex;
@@ -461,134 +460,86 @@
   &__rule {
     width: min(12rem, 40vw);
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(58, 52, 44, 0.22) 20%,
-      rgba(58, 52, 44, 0.22) 80%,
-      transparent
-    );
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(58, 52, 44, 0.22) 20%,
+        rgba(58, 52, 44, 0.22) 80%,
+        transparent);
   }
 }
 
-// Masonry grid
-.masonry {
-  column-count: 2;
-  column-gap: clamp(14px, 2.8vw, 28px);
+// Simple Luxury Portfolio Grid
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(2rem, 8vw, 6rem);
+  margin-top: 3rem;
+  max-width: 1000px;
+  margin: 3rem auto 0;
 
-  @media (min-width: 768px) {
-    column-count: 3;
-  }
-
-  @media (min-width: 1280px) {
-    column-count: 4;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    padding: 0;
   }
 }
 
 .grid-item {
   position: relative;
-  break-inside: avoid;
-  margin-bottom: clamp(14px, 2.8vw, 28px);
   overflow: hidden;
-  border-radius: 10px;
-  background-color: var(--color-surface);
-  box-shadow:
-    0 12px 36px rgba(42, 37, 32, 0.07),
-    0 0 0 1px rgba(58, 52, 44, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  border-radius: 4px;
+  background-color: transparent;
   cursor: pointer;
-  isolation: isolate;
 
   opacity: 0;
-  transform: translate3d(0, 52px, 0) scale(0.97);
-  transition:
-    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.95s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.45s ease;
+  transform: translateY(30px);
+  transition: opacity 1s ease, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
   transition-delay: var(--delay, 0s);
 
   .home-gallery.scroll-reveal--visible & {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translateY(0);
   }
 
-  .grid-item__shine {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    background: linear-gradient(
-      125deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      transparent 42%,
-      transparent 58%,
-      rgba(42, 37, 32, 0.06) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.55s ease;
-    mix-blend-mode: soft-light;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    background: linear-gradient(180deg, transparent 52%, rgba(42, 37, 32, 0.34) 100%);
-    opacity: 0;
-    transition: opacity 0.55s ease;
+  // Vertical rhythm: Offset second column for an elegant staggered look
+  &:nth-child(even) {
+    margin-top: clamp(4rem, 12vw, 12rem);
+    @media (max-width: 640px) { margin-top: 0; }
   }
 
   img {
-    position: relative;
-    z-index: 1;
+    display: block;
     width: 100%;
     height: auto;
-    display: block;
-    transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 0.5s ease;
   }
 
-  &:hover {
-    box-shadow:
-      0 20px 48px rgba(42, 37, 32, 0.11),
-      0 0 0 1px rgba(58, 52, 44, 0.09),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
-
-    .grid-item__shine {
-      opacity: 1;
-    }
-
-    &::after {
-      opacity: 1;
-    }
-
-    img {
-      transform: scale(1.045);
-    }
+  &:hover img {
+    opacity: 0.75;
   }
 
   .delete-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 4;
-    width: 34px;
-    height: 34px;
-    background-color: rgba(58, 52, 44, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
-    color: var(--color-surface);
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    width: 38px;
+    height: 38px;
+    background-color: var(--color-surface);
+    color: var(--color-heading);
+    border: none;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: all 0.25s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 
     &:hover {
       background-color: #dc2626;
-      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
     }
   }
 
