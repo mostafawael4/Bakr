@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { PackageService, Package } from '../../services/package.service';
 import { PackageModalComponent } from '../../components/package-modal/package-modal.component';
@@ -12,9 +13,12 @@ import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-
   templateUrl: './packages.component.html',
   styleUrls: ['./packages.component.scss'],
 })
-export class PackagesComponent implements OnInit {
+export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   private packageService = inject(PackageService);
+  private platformId = inject(PLATFORM_ID);
+
+  @ViewChildren('cardItem') cardItems!: QueryList<ElementRef>;
 
   packages: Package[] = [];
   loading = true;
@@ -25,8 +29,65 @@ export class PackagesComponent implements OnInit {
   deleteTarget: Package | null = null;
   showDeleteDialog = false;
 
+  private observer: IntersectionObserver | null = null;
+  private cardSub: Subscription | null = null;
+
+  get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
   ngOnInit(): void {
     this.fetchPackages();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.isBrowser) {
+      this.setupObserver();
+      this.cardSub = this.cardItems.changes.subscribe(() => this.observeItems());
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+    this.cardSub?.unsubscribe();
+  }
+
+  private setupObserver(): void {
+    if (!this.isBrowser) return;
+    this.observer?.disconnect();
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            this.observer?.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    );
+    this.observeItems();
+  }
+
+  private observeItems(): void {
+    if (!this.observer) {
+      this.setupObserver();
+    }
+    this.cardItems?.forEach((item) => {
+      const el = item.nativeElement;
+      if (!el.classList.contains('visible')) {
+        this.observer?.observe(el);
+      }
+    });
+  }
+
+  private scheduleObserve(): void {
+    if (!this.isBrowser || this.packages.length === 0) return;
+    queueMicrotask(() => {
+      this.observeItems();
+      // Second check for layout stability
+      setTimeout(() => this.observeItems(), 0);
+    });
   }
 
   private fetchPackages(): void {
@@ -35,6 +96,7 @@ export class PackagesComponent implements OnInit {
       next: (res) => {
         this.packages = res.packages;
         this.loading = false;
+        this.scheduleObserve();
       },
       error: () => {
         this.loading = false;
@@ -103,5 +165,10 @@ export class PackagesComponent implements OnInit {
 
   formatPrice(price: number): string {
     return price.toLocaleString('en-US');
+  }
+
+  inquireWhatsApp(pkg: Package): void {
+    const text = encodeURIComponent(`Hello! I'm interested in the ${pkg.name} package (${pkg.price} ${pkg.currency}). Could you please provide more details?`);
+    window.open(`https://wa.me/+201067715649?text=${text}`, '_blank');
   }
 }
