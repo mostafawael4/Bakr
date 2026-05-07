@@ -31,6 +31,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   private wsService = inject(WebSocketService);
 
+  readonly instagramUrl = 'https://www.instagram.com/abobakrweddings/';
+
   @ViewChildren('scrollReveal', { read: ElementRef }) scrollRevealEls!: QueryList<ElementRef>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
