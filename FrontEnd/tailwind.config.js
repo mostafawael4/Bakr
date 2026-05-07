@@ -6,24 +6,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        gold: {
-          DEFAULT: '#DAA520',
-          hover: '#c4911a',
-        },
-        bg: {
-          primary: '#131317',
-          secondary: '#1B1B1F',
-        },
-        text: {
-          primary: '#FFFFFF',
-          secondary: '#A1A1AA',
-        },
-        border: {
-          DEFAULT: '#3F3F46',
+        brand: {
+          page: '#EDEBE6',
+          surface: '#FFFFFF',
+          heading: '#2A2520',
+          nav: '#7A7268',
+          caption: '#C8C4BC',
+          border: '#D8D4CC',
+          interactive: '#3A342C',
+          'interactive-hover': '#2A2520',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Georgia', 'Times New Roman', 'serif'],
       },
     },
   },

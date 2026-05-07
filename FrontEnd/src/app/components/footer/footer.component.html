@@ -1,0 +1,54 @@
+<footer class="lux-footer">
+  <div class="lux-footer__wash" aria-hidden="true"></div>
+  <div class="lux-footer__beam" aria-hidden="true"></div>
+
+  <div class="lux-footer__inner">
+    <div class="lux-footer__grid">
+      <div class="lux-footer__rail">
+        <span class="lux-footer__rail-label">Follow</span>
+        <a
+          class="lux-footer__ig-pill"
+          [href]="instagramUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="'Instagram — ' + instagramHandle"
+        >
+          <span class="lux-footer__ig-pill-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <span class="lux-footer__ig-pill-text">{{ instagramHandle }}</span>
+        </a>
+      </div>
+
+      <nav class="lux-footer__nav" aria-label="Footer">
+        <a
+          routerLink="/"
+          routerLinkActive="lux-footer__link--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="lux-footer__link"
+        >Home</a>
+        <a routerLink="/packages" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Packages</a>
+        <a routerLink="/gallery" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Gallery</a>
+        <a routerLink="/events" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Events</a>
+        <a routerLink="/feedbacks" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Feedbacks</a>
+      </nav>
+
+      <button type="button" class="lux-footer__orbit" (click)="scrollToTop()" aria-label="Back to top">
+        <span class="lux-footer__orbit-ring" aria-hidden="true"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 19V5"/>
+          <path d="m5 12 7-7 7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="lux-footer__floor">
+      <p class="lux-footer__copyright">© 2026 Abo Bakr</p>
+      <span class="lux-footer__tag">Photography</span>
+    </div>
+  </div>
+</footer>

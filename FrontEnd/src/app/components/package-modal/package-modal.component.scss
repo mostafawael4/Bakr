@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(42, 37, 32, 0.45);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -12,8 +12,8 @@
 }
 
 .modal-card {
-  background-color: #1b1b1f;
-  border: 1px solid #3f3f46;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 2rem;
   width: 100%;
@@ -21,6 +21,7 @@
   max-height: 90vh;
   overflow-y: auto;
   animation: scaleIn 0.25s ease;
+  box-shadow: 0 20px 50px rgba(42, 37, 32, 0.12);
 }
 
 .modal-header {
@@ -31,23 +32,23 @@
 
   h2 {
     font-size: 1.25rem;
-    font-weight: 600;
-    color: #ffffff;
+    font-weight: 300;
+    color: var(--color-heading);
     margin: 0;
   }
 
   .close-btn {
     background: none;
     border: none;
-    color: #a1a1aa;
+    color: var(--color-nav);
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
     transition: color 0.2s, background-color 0.2s;
 
     &:hover {
-      color: #ffffff;
-      background-color: #3f3f46;
+      color: var(--color-heading);
+      background-color: var(--color-page);
     }
   }
 }
@@ -65,20 +66,20 @@
 
   label {
     font-size: 0.8rem;
-    font-weight: 500;
-    color: #a1a1aa;
+    font-weight: 400;
+    color: var(--color-nav);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.14em;
   }
 
   input[type='text'],
   input[type='number'],
   textarea {
-    background-color: #131317;
-    border: 1px solid #3f3f46;
+    background-color: var(--color-page);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     padding: 0.65rem 0.85rem;
-    color: #ffffff;
+    color: var(--color-heading);
     font-size: 0.9rem;
     font-family: inherit;
     transition: border-color 0.2s;
@@ -86,11 +87,11 @@
     width: 100%;
 
     &:focus {
-      border-color: #daa520;
+      border-color: var(--color-interactive);
     }
 
     &::placeholder {
-      color: #52525b;
+      color: var(--color-caption);
     }
   }
 
@@ -113,14 +114,14 @@
     gap: 0.6rem;
     cursor: pointer;
     font-size: 0.9rem;
-    color: #ffffff;
+    color: var(--color-heading);
     text-transform: none;
     letter-spacing: 0;
 
     input[type='checkbox'] {
       width: 18px;
       height: 18px;
-      accent-color: #daa520;
+      accent-color: var(--color-interactive);
       cursor: pointer;
     }
   }
@@ -135,17 +136,17 @@
   .btn-cancel {
     padding: 0.6rem 1.2rem;
     border-radius: 8px;
-    border: 1px solid #3f3f46;
+    border: 1px solid var(--color-border);
     background: transparent;
-    color: #a1a1aa;
+    color: var(--color-nav);
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-      border-color: #52525b;
-      color: #ffffff;
+      border-color: var(--color-interactive);
+      color: var(--color-heading);
     }
   }
 
@@ -153,25 +154,35 @@
     padding: 0.6rem 1.4rem;
     border-radius: 8px;
     border: none;
-    background-color: #daa520;
-    color: #131317;
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: #c4911a;
+      background-color: var(--color-interactive-hover);
     }
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

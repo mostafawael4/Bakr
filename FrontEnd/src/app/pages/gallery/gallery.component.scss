@@ -1,5 +1,5 @@
 .gallery-page {
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - var(--navbar-height));
   padding: 3rem 0 4rem;
 }
 
@@ -11,14 +11,14 @@
 
   h1 {
     font-size: 2.5rem;
-    font-weight: 700;
-    color: #daa520;
+    font-weight: 300;
+    color: var(--color-heading);
     margin-bottom: 0.75rem;
   }
 
   .subtitle {
     font-size: 1rem;
-    color: #a1a1aa;
+    color: var(--color-nav);
     max-width: 500px;
     margin: 0 auto;
     line-height: 1.6;
@@ -37,16 +37,16 @@
     gap: 0.5rem;
     padding: 0.65rem 1.4rem;
     border-radius: 8px;
-    border: none;
-    background-color: #daa520;
-    color: #131317;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.15s;
 
     &:hover {
-      background-color: #c4911a;
+      background-color: var(--color-interactive-hover);
       transform: translateY(-1px);
     }
   }
@@ -60,8 +60,8 @@
   .spinner {
     width: 36px;
     height: 36px;
-    border: 3px solid #3f3f46;
-    border-top-color: #daa520;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-interactive);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -70,7 +70,7 @@
 .empty-state {
   text-align: center;
   padding: 4rem 0;
-  color: #a1a1aa;
+  color: var(--color-nav);
   font-size: 1rem;
 }
 
@@ -92,7 +92,9 @@
   text-decoration: none;
   animation: slideUp 0.6s ease both;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    0 8px 32px rgba(42, 37, 32, 0.12);
 
   @media (min-width: 768px) {
     height: 450px;
@@ -114,24 +116,22 @@
   .event-overlay {
     position: absolute;
     inset: 0;
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.55) 0%,
-        rgba(0, 0, 0, 0.72) 45%,
-        rgba(0, 0, 0, 0.85) 100%
-      );
+    background: linear-gradient(
+      to bottom,
+      var(--overlay-image-1) 0%,
+      var(--overlay-image-2) 45%,
+      var(--overlay-image-3) 100%
+    );
     transition: background 0.35s ease;
   }
 
   &:hover .event-overlay {
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.48) 0%,
-        rgba(0, 0, 0, 0.65) 45%,
-        rgba(0, 0, 0, 0.8) 100%
-      );
+    background: linear-gradient(
+      to bottom,
+      var(--overlay-image-hover-1) 0%,
+      var(--overlay-image-hover-2) 45%,
+      var(--overlay-image-hover-3) 100%
+    );
   }
 
   .event-content {
@@ -150,17 +150,17 @@
   }
 
   .event-name {
-    font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
+    font-family: var(--font-display);
     font-size: clamp(2.125rem, 5.5vw, 3.5rem);
-    font-weight: 500;
+    font-weight: 300;
     font-style: italic;
-    color: #faf8f5;
+    color: var(--color-surface);
     margin: 0;
     line-height: 1.12;
     letter-spacing: 0.03em;
     text-shadow:
-      0 2px 28px rgba(0, 0, 0, 0.55),
-      0 1px 3px rgba(0, 0, 0, 0.35);
+      0 2px 28px rgba(0, 0, 0, 0.35),
+      0 1px 3px rgba(0, 0, 0, 0.25);
 
     &::after {
       content: '';
@@ -171,8 +171,8 @@
       background: linear-gradient(
         90deg,
         transparent,
-        rgba(218, 165, 32, 0.95) 20%,
-        rgba(218, 165, 32, 0.95) 80%,
+        var(--color-border) 20%,
+        var(--color-border) 80%,
         transparent
       );
       opacity: 0.95;
@@ -181,13 +181,13 @@
 
   .event-count {
     margin: 1.1rem 0 0;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.22em;
+    font-weight: 300;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(255, 252, 248, 0.88);
-    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+    color: var(--color-caption);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
   }
 
   .event-admin {
@@ -213,21 +213,21 @@
     }
 
     .btn-edit {
-      background-color: rgba(0, 0, 0, 0.6);
-      color: #ffffff;
+      background-color: rgba(58, 52, 44, 0.75);
+      color: var(--color-surface);
 
       &:hover {
-        background-color: rgba(218, 165, 32, 0.9);
-        color: #131317;
+        background-color: var(--color-interactive);
+        color: var(--color-surface);
       }
     }
 
     .btn-delete {
-      background-color: rgba(0, 0, 0, 0.6);
-      color: #fca5a5;
+      background-color: rgba(58, 52, 44, 0.75);
+      color: #fecaca;
 
       &:hover {
-        background-color: rgba(220, 38, 38, 0.9);
+        background-color: rgba(220, 38, 38, 0.92);
         color: #ffffff;
       }
     }
@@ -245,7 +245,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideUp {

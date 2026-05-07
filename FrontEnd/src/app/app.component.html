@@ -15,10 +15,15 @@
 
 <!-- App content -->
 @if (appReady) {
-  @if (showNavbar) {
-    <app-navbar />
-  }
-  <main [class.main-content]="showNavbar">
-    <router-outlet />
-  </main>
+  <div class="app-shell">
+    @if (showNavbar) {
+      <app-navbar />
+    }
+    <main [class.main-content]="showNavbar">
+      <router-outlet />
+    </main>
+    @if (showNavbar) {
+      <app-footer />
+    }
+  </div>
 }

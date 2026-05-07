@@ -1,13 +1,20 @@
-.main-content {
-  padding-top: 72px;
+.app-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: var(--navbar-height);
+  min-height: 0;
 }
 
 .splash-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background-color: #131317;
+  background-color: var(--color-page);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,15 +36,20 @@
 }
 
 @keyframes logoFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .splash-message {
-  color: #A1A1AA;
+  color: var(--color-caption);
   font-size: 1rem;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
 }
 
 .splash-loader {
@@ -47,7 +59,7 @@
   span {
     width: 8px;
     height: 8px;
-    background-color: #DAA520;
+    background-color: var(--color-interactive);
     border-radius: 50%;
     animation: bounce 1.2s ease-in-out infinite;
 
@@ -62,7 +74,9 @@
 }
 
 @keyframes bounce {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -73,8 +87,12 @@
 }
 
 @keyframes splashFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes splashPulse {

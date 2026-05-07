@@ -31,7 +31,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   private wsService = inject(WebSocketService);
 
-  @ViewChildren('gridItem') gridItems!: QueryList<ElementRef>;
+  @ViewChildren('scrollReveal', { read: ElementRef }) scrollRevealEls!: QueryList<ElementRef>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   images: HomeImage[] = [];
@@ -56,7 +56,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   lightboxOpen = false;
   lightboxStart = 0;
 
-  private observer: IntersectionObserver | null = null;
+  private revealObserver: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
 
   get isBrowser(): boolean {
@@ -90,42 +90,39 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     if (this.isBrowser) {
-      this.setupObserver();
-      this.gridItems.changes.subscribe(() => this.observeItems());
+      this.setupRevealObserver();
+      this.scrollRevealEls.changes.subscribe(() => this.observeRevealElements());
     }
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
-    this.observer?.disconnect();
+    this.revealObserver?.disconnect();
   }
 
-  private setupObserver(): void {
-    this.observer = new IntersectionObserver(
+  private setupRevealObserver(): void {
+    this.revealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            this.observer?.unobserve(entry.target);
+            entry.target.classList.add('scroll-reveal--visible');
+            this.revealObserver?.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.12, rootMargin: '0px 0px -7% 0px' }
     );
-    this.observeItems();
+    queueMicrotask(() => this.observeRevealElements());
   }
 
-  private observeItems(): void {
-    this.gridItems?.forEach((item) => {
-      this.observer?.observe(item.nativeElement);
-    });
-  }
-
-  /** Run after the grid is in the DOM so IntersectionObserver picks up items and CSS delays apply. */
-  private scheduleObserveGrid(): void {
-    if (!this.isBrowser || this.images.length === 0) return;
-    queueMicrotask(() => {
-      setTimeout(() => this.observeItems(), 0);
+  private observeRevealElements(): void {
+    const io = this.revealObserver;
+    if (!io) return;
+    this.scrollRevealEls?.forEach((ref) => {
+      const el = ref.nativeElement as HTMLElement;
+      if (!el.classList.contains('scroll-reveal--visible')) {
+        io.observe(el);
+      }
     });
   }
 
@@ -137,11 +134,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         this.images = res.images;
         this.loading = false;
-        this.scheduleObserveGrid();
+        if (this.isBrowser) {
+          queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
+        }
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        if (this.isBrowser) {
+          queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
+        }
       },
     });
   }
