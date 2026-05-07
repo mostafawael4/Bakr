@@ -3,6 +3,7 @@ import authRouter from './auth.js';
 import homeRouter from './home.js';
 import packageRouter from './package.js';
 import galleryRouter from './gallery.js';
+import clientEventRouter from './clientEvent.js';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/auth', authRouter);
 router.use('/home', homeRouter);
 router.use('/packages', packageRouter);
 router.use('/gallery', galleryRouter);
+router.use('/client-events', clientEventRouter);
 
 export default router;

@@ -1,0 +1,82 @@
+<div class="access-page">
+  <div class="access-card">
+    <!-- Brand -->
+    <div class="brand">
+      <span class="brand-name">ABO BAKR</span>
+      <p class="brand-tagline">Your Precious Moments</p>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider">
+      <span></span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+      </svg>
+      <span></span>
+    </div>
+
+    <h1>Access Your Event</h1>
+    <p class="description">Enter your event credentials to view your photos</p>
+
+    <!-- Error -->
+    @if (error) {
+      <div class="error-message">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        {{ error }}
+      </div>
+    }
+
+    <form (ngSubmit)="submit()" class="access-form">
+      @if (!eventId) {
+        <div class="form-group">
+          <label for="eventId">Event Code</label>
+          <input
+            id="eventId"
+            type="text"
+            [(ngModel)]="eventId"
+            name="eventId"
+            placeholder="Enter your event code"
+            autocomplete="off"
+          />
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="accessPassword">Password</label>
+        <div class="password-wrap">
+          <input
+            id="accessPassword"
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="Enter your password"
+            autocomplete="off"
+          />
+          <button type="button" class="toggle-pw" (click)="togglePassword()">
+            @if (showPassword) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            }
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-access" [disabled]="loading">
+        @if (loading) {
+          <div class="btn-spinner"></div>
+          Verifying...
+        } @else {
+          View My Event
+        }
+      </button>
+    </form>
+  </div>
+</div>

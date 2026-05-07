@@ -1,0 +1,237 @@
+.access-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--color-page);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(42, 37, 32, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(42, 37, 32, 0.02) 0%, transparent 50%);
+}
+
+.access-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 20px 60px rgba(42, 37, 32, 0.08);
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  text-align: center;
+}
+
+/* ── Brand ── */
+.brand {
+  margin-bottom: 1.25rem;
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-heading);
+  }
+
+  .brand-tagline {
+    font-size: 0.75rem;
+    color: var(--color-nav);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.35rem;
+  }
+}
+
+/* ── Divider ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+
+  span {
+    flex: 1;
+    height: 1px;
+    background-color: var(--color-border);
+  }
+
+  svg {
+    color: var(--color-caption);
+  }
+}
+
+h1 {
+  font-size: 1.35rem;
+  font-weight: 300;
+  color: var(--color-heading);
+  margin: 0 0 0.5rem;
+}
+
+.description {
+  font-size: 0.85rem;
+  color: var(--color-nav);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* ── Error ── */
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  margin-bottom: 1.25rem;
+  animation: shake 0.4s ease;
+}
+
+/* ── Form ── */
+.access-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-nav);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  input[type='text'],
+  input[type='password'] {
+    background-color: var(--color-page);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: var(--color-heading);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
+
+    &:focus {
+      border-color: var(--color-interactive);
+      box-shadow: 0 0 0 3px rgba(58, 52, 44, 0.08);
+    }
+
+    &::placeholder {
+      color: var(--color-caption);
+    }
+  }
+}
+
+.password-wrap {
+  position: relative;
+
+  input {
+    padding-right: 2.75rem !important;
+  }
+
+  .toggle-pw {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-nav);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-heading);
+    }
+  }
+}
+
+/* ── Submit Button ── */
+.btn-access {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 10px;
+  border: none;
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
+  margin-top: 0.25rem;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-interactive-hover);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ── Animations ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@media (max-width: 480px) {
+  .access-card {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+  }
+}

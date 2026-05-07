@@ -37,7 +37,9 @@ export class AppComponent implements OnInit {
     ).subscribe((event) => {
       const navEnd = event as NavigationEnd;
       this.currentUrl = navEnd.urlAfterRedirects;
-      this.showNavbar = !this.currentUrl.startsWith('/admin');
+      this.showNavbar = !this.currentUrl.startsWith('/admin')
+        && !this.currentUrl.startsWith('/event-access')
+        && !this.currentUrl.startsWith('/event/');
       
       // Trigger page animation
       this.isAnimating = false;

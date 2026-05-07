@@ -1,0 +1,88 @@
+@if (visible) {
+  <div class="modal-overlay" (click)="close()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEdit ? 'Edit' : 'Create' }} Event</h2>
+        <button class="close-btn" (click)="close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form (ngSubmit)="submit()" class="modal-form">
+        <!-- Bride & Groom Names -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="brideName">Bride Name</label>
+            <input id="brideName" type="text" [(ngModel)]="brideName" name="brideName" placeholder="e.g. Sara" required />
+          </div>
+          <div class="form-group">
+            <label for="groomName">Groom Name</label>
+            <input id="groomName" type="text" [(ngModel)]="groomName" name="groomName" placeholder="e.g. Ahmed" required />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="eventPassword">Access Password</label>
+          <div class="password-row">
+            <div class="password-input-wrap">
+              <input
+                id="eventPassword"
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="Enter password"
+                required
+              />
+              <button type="button" class="toggle-pw" (click)="togglePassword()">
+                @if (showPassword) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                }
+              </button>
+            </div>
+            <button type="button" class="btn-generate" (click)="generatePassword()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+              Generate
+            </button>
+          </div>
+        </div>
+
+        <!-- Background Image -->
+        <div class="form-group">
+          <label>Background Image</label>
+          <div class="cover-upload" (click)="bgInput.click()">
+            @if (backgroundPreview) {
+              <img [src]="backgroundPreview" alt="Background preview" class="cover-preview" />
+              <span class="cover-change">Change</span>
+            } @else {
+              <div class="cover-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span>Click to upload background</span>
+              </div>
+            }
+          </div>
+          <input #bgInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onBackgroundSelected($event)" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="close()">Cancel</button>
+          <button type="submit" class="btn-save">{{ isEdit ? 'Update' : 'Create' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
