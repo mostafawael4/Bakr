@@ -33,7 +33,9 @@
         >Home</a>
         <a routerLink="/packages" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Packages</a>
         <a routerLink="/gallery" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Gallery</a>
-        <a routerLink="/events" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Events</a>
+        @if (authService.isLoggedIn) {
+          <a routerLink="/events" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Events</a>
+        }
         <a routerLink="/feedbacks" routerLinkActive="lux-footer__link--active" class="lux-footer__link">Feedbacks</a>
       </nav>
 

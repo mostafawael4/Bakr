@@ -20,9 +20,11 @@
       <li>
         <a routerLink="/gallery" routerLinkActive="active" (click)="closeMenu()">Gallery</a>
       </li>
-      <li>
-        <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
-      </li>
+      @if (authService.isLoggedIn) {
+        <li>
+          <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
+        </li>
+      }
       <li>
         <a routerLink="/feedbacks" routerLinkActive="active" (click)="closeMenu()">Feedbacks</a>
       </li>

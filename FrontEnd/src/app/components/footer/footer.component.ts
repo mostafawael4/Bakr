@@ -1,6 +1,7 @@
 import { Component, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-footer',
@@ -10,6 +11,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrls: ['./footer.component.scss'],
 })
 export class FooterComponent {
+  authService = inject(AuthService);
   private platformId = inject(PLATFORM_ID);
 
   readonly instagramUrl = 'https://www.instagram.com/abobakrweddings/';
