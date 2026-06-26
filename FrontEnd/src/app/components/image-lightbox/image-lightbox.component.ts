@@ -35,6 +35,7 @@ export class ImageLightboxComponent implements OnChanges, OnDestroy {
   @Input() startIndex = 0;
 
   @Output() closed = new EventEmitter<void>();
+  @Output() downloadRequested = new EventEmitter<number>();
 
   activeIndex = 0;
   private touchStartX = 0;
@@ -96,6 +97,10 @@ export class ImageLightboxComponent implements OnChanges, OnDestroy {
 
   close(): void {
     this.closed.emit();
+  }
+
+  requestDownload(): void {
+    this.downloadRequested.emit(this.activeIndex);
   }
 
   prev(): void {

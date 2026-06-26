@@ -159,6 +159,37 @@
   margin-left: auto;
 }
 
+/* ── Download All Button ── */
+.btn-download-all {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-heading);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+    border-color: var(--color-interactive);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(42, 37, 32, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
 .btn-back {
   display: flex;
   align-items: center;
@@ -415,7 +446,8 @@
     }
 
     &:hover .img-delete-btn,
-    &:hover .img-cover-btn {
+    &:hover .img-cover-btn,
+    &:hover .img-download-btn {
       opacity: 1;
     }
 
@@ -478,6 +510,30 @@
   &:hover {
     background-color: #dc2626;
     color: #fff;
+  }
+}
+
+.img-download-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--color-interactive);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
   }
 }
 
@@ -555,6 +611,10 @@
   }
 
   .img-cover-btn {
+    opacity: 1;
+  }
+
+  .img-download-btn {
     opacity: 1;
   }
 }

@@ -6,15 +6,17 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ClientEventService, ClientEventFolder, ClientEventImage } from '../../services/client-event.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { DownloadService, DownloadProgress } from '../../services/download.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
 import { ImageLightboxComponent, ImageLightboxSlide } from '../../components/image-lightbox/image-lightbox.component';
+import { DownloadModalComponent, DownloadModalState } from '../../components/download-modal/download-modal.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmDialogComponent, UploadModalComponent, ImageLightboxComponent],
+  imports: [CommonModule, FormsModule, ConfirmDialogComponent, UploadModalComponent, ImageLightboxComponent, DownloadModalComponent],
   templateUrl: './event-detail.component.html',
   styleUrls: ['./event-detail.component.scss'],
 })
@@ -24,6 +26,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private clientEventService = inject(ClientEventService);
   private wsService = inject(WebSocketService);
+  private downloadService = inject(DownloadService);
   authService = inject(AuthService);
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -70,7 +73,19 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   heroFocalEditMode = false;
   savingHeroFocal = false;
 
+  // Download state
+  downloadState: DownloadModalState = {
+    visible: false,
+    folderName: '',
+    totalFiles: 0,
+    downloadedFiles: 0,
+    percent: 0,
+    done: false,
+    error: null,
+  };
+
   private wsSub: Subscription | null = null;
+  private dlSub: Subscription | null = null;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -104,11 +119,17 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           }
         }
       });
+
+      // Subscribe to download progress updates
+      this.dlSub = this.downloadService.progress$.subscribe((progress) => {
+        this.downloadState = { ...progress };
+      });
     }
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
+    this.dlSub?.unsubscribe();
   }
 
   private fetchEventDetails(): void {
@@ -402,6 +423,37 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   closeLightbox(): void {
     this.lightboxOpen = false;
+  }
+
+  /* ── Downloads ── */
+
+  /** Download a single image (the original / highest-quality version) */
+  downloadSingleImage(image: ClientEventImage, e?: MouseEvent): void {
+    e?.stopPropagation();
+    const url = this.getFullUrl(image.url);
+    this.downloadService.downloadSingleImage(url, image.originalName);
+  }
+
+  /** Download the current lightbox image */
+  downloadLightboxImage(index: number): void {
+    const img = this.images[index];
+    if (img) {
+      this.downloadSingleImage(img);
+    }
+  }
+
+  /** Download all images in the current folder as a ZIP */
+  downloadFolder(): void {
+    if (!this.images.length || !this.selectedFolder) return;
+    const folderImages = this.images.map((img) => ({
+      url: this.getFullUrl(img.url),
+      originalName: img.originalName,
+    }));
+    this.downloadService.downloadFolderAsZip(folderImages, this.selectedFolder);
+  }
+
+  onDownloadDismissed(): void {
+    this.downloadState = { ...this.downloadState, visible: false };
   }
 
   get lightboxSlides(): ImageLightboxSlide[] {
