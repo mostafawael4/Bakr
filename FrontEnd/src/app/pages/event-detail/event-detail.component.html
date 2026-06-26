@@ -170,47 +170,51 @@
 
   @if (!loadingImages && images.length > 0) {
   <div class="images-grid">
-    @for (image of images; track image._id; let i = $index) {
-    <div class="image-item" [class.is-cover]="isAdmin && isFolderCover(image)" (click)="openLightbox(i)">
-      <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)" sizes="(max-width:768px) 50vw,
-                       (max-width:1280px) 33vw, 25vw" [alt]="image.originalName" loading="lazy" />
-      <!-- Download button (always visible) -->
-      <button class="img-download-btn" (click)="downloadSingleImage(image, $event)" title="Download image">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-      </button>
-      @if (isAdmin) {
-      <button
-        class="img-cover-btn"
-        [class.is-active]="isFolderCover(image)"
-        (click)="setAsFolderCover(image, $event)"
-        [title]="isFolderCover(image) ? 'Folder cover' : 'Set as folder cover'"
-      >
-        @if (isFolderCover(image)) {
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-        } @else {
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
+    @for (column of masonryColumns; track $index) {
+      <div class="masonry-column">
+        @for (image of column.images; track image._id) {
+        <div class="image-item" [class.is-cover]="isAdmin && isFolderCover(image)" (click)="openLightbox(image)">
+          <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)" sizes="(max-width:768px) 50vw,
+                           (max-width:1280px) 33vw, 25vw" [alt]="image.originalName" loading="lazy" />
+          <!-- Download button (always visible) -->
+          <button class="img-download-btn" (click)="downloadSingleImage(image, $event)" title="Download image">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          @if (isAdmin) {
+          <button
+            class="img-cover-btn"
+            [class.is-active]="isFolderCover(image)"
+            (click)="setAsFolderCover(image, $event)"
+            [title]="isFolderCover(image) ? 'Folder cover' : 'Set as folder cover'"
+          >
+            @if (isFolderCover(image)) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            }
+          </button>
+          <button class="img-delete-btn" (click)="askDeleteImage(image);
+                               $event.stopPropagation()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0
+                          01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+            </svg>
+          </button>
+          }
+        </div>
         }
-      </button>
-      <button class="img-delete-btn" (click)="askDeleteImage(image);
-                           $event.stopPropagation()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0
-                      01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-        </svg>
-      </button>
-      }
-    </div>
+      </div>
     }
   </div>
   }

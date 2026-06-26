@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, PLATFORM_ID, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, PLATFORM_ID, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -35,6 +35,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   event: any = null;
   folders: ClientEventFolder[] = [];
   images: ClientEventImage[] = [];
+  displayedImages: ClientEventImage[] = [];
+  masonryColumns: { images: ClientEventImage[] }[] = [];
+  columnCount = 4;
+  pageSize = 20;
+  
   loading = true;
   loadingImages = false;
 
@@ -97,6 +102,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.eventId = this.route.snapshot.paramMap.get('eventId') || '';
+    this.calculateColumnCount();
     this.fetchEventDetails();
 
     if (this.isBrowser) {
@@ -130,6 +136,56 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
     this.dlSub?.unsubscribe();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.calculateColumnCount();
+  }
+
+  @HostListener('window:scroll', [])
+  onScroll(): void {
+    if (!this.isBrowser || this.currentView !== 'images' || this.displayedImages.length === this.images.length) return;
+    
+    // Calculate if we are near the bottom of the page (within 400px)
+    const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
+    const max = document.documentElement.scrollHeight;
+    
+    if (pos > max - 400) {
+      this.loadMoreImages();
+    }
+  }
+
+  loadMoreImages(): void {
+    const nextImages = this.images.slice(this.displayedImages.length, this.displayedImages.length + this.pageSize);
+    if (nextImages.length > 0) {
+      const startIndex = this.displayedImages.length;
+      this.displayedImages = [...this.displayedImages, ...nextImages];
+      nextImages.forEach((img, idx) => {
+        const globalIndex = startIndex + idx;
+        this.masonryColumns[globalIndex % this.columnCount].images.push(img);
+      });
+    }
+  }
+
+  private calculateColumnCount(): void {
+    if (!this.isBrowser) return;
+    const width = window.innerWidth;
+    let newCount = 4;
+    if (width <= 768) newCount = 2;
+    else if (width <= 1024) newCount = 3;
+    
+    if (newCount !== this.columnCount || this.masonryColumns.length === 0) {
+      this.columnCount = newCount;
+      this.rebuildMasonry();
+    }
+  }
+
+  private rebuildMasonry(): void {
+    this.masonryColumns = Array.from({ length: this.columnCount }, () => ({ images: [] }));
+    this.displayedImages.forEach((img, idx) => {
+      this.masonryColumns[idx % this.columnCount].images.push(img);
+    });
   }
 
   private fetchEventDetails(): void {
@@ -194,6 +250,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.selectedFolder = '';
     this.folderCoverImageId = null;
     this.images = [];
+    this.displayedImages = [];
+    this.rebuildMasonry();
     // Refresh folders
     if (this.isAdmin) {
       this.fetchFolders();
@@ -207,6 +265,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.clientEventService.getImages(this.eventId, this.selectedFolder).subscribe({
       next: (res) => {
         this.images = res.images;
+        this.displayedImages = this.images.slice(0, this.pageSize);
+        this.rebuildMasonry();
         this.loadingImages = false;
       },
       error: () => {
@@ -230,6 +290,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.selectedFolder = this.newFolderName.trim();
     this.currentView = 'images';
     this.images = [];
+    this.displayedImages = [];
+    this.rebuildMasonry();
     this.loadingImages = false;
     this.showFolderInput = false;
     this.newFolderName = '';
@@ -301,6 +363,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.clientEventService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
         this.images = this.images.filter(img => img._id !== imageId);
+        this.displayedImages = this.displayedImages.filter(img => img._id !== imageId);
+        this.rebuildMasonry();
         if (this.folderCoverImageId === imageId) {
           this.folderCoverImageId = null;
           const folder = this.folders.find(f => f.key === this.selectedFolder);
@@ -416,9 +480,12 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   /* ── Lightbox ── */
-  openLightbox(index: number): void {
-    this.lightboxStart = index;
-    this.lightboxOpen = true;
+  openLightbox(image: ClientEventImage): void {
+    const idx = this.images.findIndex((img) => img._id === image._id);
+    if (idx !== -1) {
+      this.lightboxStart = idx;
+      this.lightboxOpen = true;
+    }
   }
 
   closeLightbox(): void {
