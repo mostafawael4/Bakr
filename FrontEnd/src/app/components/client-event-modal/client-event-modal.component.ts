@@ -22,10 +22,16 @@ export class ClientEventModalComponent implements OnChanges {
   password = '';
   backgroundFile: File | null = null;
   backgroundPreview: string | null = null;
+  heroFocalX = 50;
+  heroFocalY = 50;
   showPassword = false;
 
   get isEdit(): boolean {
     return this.editEvent !== null;
+  }
+
+  get heroFocalPosition(): string {
+    return `${this.heroFocalX}% ${this.heroFocalY}%`;
   }
 
   ngOnChanges(): void {
@@ -34,6 +40,8 @@ export class ClientEventModalComponent implements OnChanges {
       this.groomName = this.editEvent.groomName;
       this.password = this.editEvent.password;
       this.backgroundPreview = this.toFullUrl(this.editEvent.backgroundImage);
+      this.heroFocalX = this.editEvent.heroFocalX ?? 50;
+      this.heroFocalY = this.editEvent.heroFocalY ?? 50;
     } else {
       this.reset();
     }
@@ -53,6 +61,20 @@ export class ClientEventModalComponent implements OnChanges {
     if (!input.files || input.files.length === 0) return;
     this.backgroundFile = input.files[0];
     this.backgroundPreview = URL.createObjectURL(this.backgroundFile);
+    this.heroFocalX = 50;
+    this.heroFocalY = 50;
+  }
+
+  setHeroFocal(event: MouseEvent): void {
+    if (!this.backgroundPreview) return;
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    this.heroFocalX = Math.round(((event.clientX - rect.left) / rect.width) * 100);
+    this.heroFocalY = Math.round(((event.clientY - rect.top) / rect.height) * 100);
+  }
+
+  openBackgroundPicker(input: HTMLInputElement): void {
+    input.click();
   }
 
   togglePassword(): void {
@@ -70,6 +92,8 @@ export class ClientEventModalComponent implements OnChanges {
     formData.append('brideName', this.brideName.trim());
     formData.append('groomName', this.groomName.trim());
     formData.append('password', this.password.trim());
+    formData.append('heroFocalX', String(this.heroFocalX));
+    formData.append('heroFocalY', String(this.heroFocalY));
     if (this.backgroundFile) {
       formData.append('background', this.backgroundFile);
     }
@@ -83,6 +107,8 @@ export class ClientEventModalComponent implements OnChanges {
     this.password = '';
     this.backgroundFile = null;
     this.backgroundPreview = null;
+    this.heroFocalX = 50;
+    this.heroFocalY = 50;
     this.showPassword = false;
   }
 

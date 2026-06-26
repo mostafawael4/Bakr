@@ -67,6 +67,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   lightboxOpen = false;
   lightboxStart = 0;
 
+  heroFocalEditMode = false;
+  savingHeroFocal = false;
+
   private wsSub: Subscription | null = null;
 
   get isBrowser(): boolean {
@@ -344,6 +347,49 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           folder.coverImageId = res.coverImageId;
           folder.coverImage = res.coverImage;
         }
+      },
+    });
+  }
+
+  /* ── Admin: Hero focal point ── */
+  getHeroPosition(): string {
+    const x = this.event?.heroFocalX ?? 50;
+    const y = this.event?.heroFocalY ?? 50;
+    return `${x}% ${y}%`;
+  }
+
+  toggleHeroFocalEdit(e: MouseEvent): void {
+    e.stopPropagation();
+    this.heroFocalEditMode = !this.heroFocalEditMode;
+  }
+
+  onHeroFocalClick(e: MouseEvent): void {
+    if (!this.isAdmin || !this.heroFocalEditMode || !this.event?.backgroundImage) return;
+
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const heroFocalX = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const heroFocalY = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+
+    this.event.heroFocalX = heroFocalX;
+    this.event.heroFocalY = heroFocalY;
+    this.saveHeroFocal(heroFocalX, heroFocalY);
+  }
+
+  private saveHeroFocal(heroFocalX: number, heroFocalY: number): void {
+    if (this.savingHeroFocal) return;
+
+    const formData = new FormData();
+    formData.append('heroFocalX', String(heroFocalX));
+    formData.append('heroFocalY', String(heroFocalY));
+
+    this.savingHeroFocal = true;
+    this.clientEventService.updateEvent(this.eventId, formData).subscribe({
+      next: () => {
+        this.savingHeroFocal = false;
+      },
+      error: () => {
+        this.savingHeroFocal = false;
       },
     });
   }

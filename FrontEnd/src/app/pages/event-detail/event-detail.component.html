@@ -15,9 +15,30 @@
 
 @if (!loading && event) {
 <!-- Hero Header -->
-<div class="event-hero" [style.background-image]="event.backgroundImage
-      ? 'url(' + getFullUrl(event.backgroundImage) + ')'
-      : 'none'">
+<div
+  class="event-hero"
+  [class.editing-focal]="heroFocalEditMode"
+  [style.background-image]="event.backgroundImage ? 'url(' + getFullUrl(event.backgroundImage) + ')' : 'none'"
+  [style.backgroundPosition]="getHeroPosition()"
+  (click)="onHeroFocalClick($event)"
+>
+  @if (isAdmin && event.backgroundImage) {
+    <button
+      type="button"
+      class="hero-focal-btn"
+      (click)="toggleHeroFocalEdit($event)"
+    >
+      {{ heroFocalEditMode ? 'Done' : 'Adjust center' }}
+    </button>
+  }
+  @if (heroFocalEditMode) {
+    <span
+      class="hero-focal-marker"
+      [style.left.%]="event.heroFocalX ?? 50"
+      [style.top.%]="event.heroFocalY ?? 50"
+      aria-hidden="true"
+    ></span>
+  }
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <span class="hero-label">Wedding Event</span>

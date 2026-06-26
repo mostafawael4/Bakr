@@ -9,6 +9,8 @@ export interface ClientEvent {
   groomName: string;
   password: string;
   backgroundImage: string | null;
+  heroFocalX?: number;
+  heroFocalY?: number;
   isActive: boolean;
   createdAt: string;
   imageCount?: number;

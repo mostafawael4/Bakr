@@ -55,6 +55,23 @@ function clearFolderCoverIfMatch(event, folderKey, imageId) {
   return false;
 }
 
+function parseFocal(value, fallback = 50) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+function publicEventPayload(event) {
+  return {
+    _id: event._id,
+    brideName: event.brideName,
+    groomName: event.groomName,
+    backgroundImage: event.backgroundImage,
+    heroFocalX: event.heroFocalX ?? 50,
+    heroFocalY: event.heroFocalY ?? 50,
+  };
+}
+
 /* ── Helper: check client session ── */
 function requireClientAccess(req, res, next) {
   const eventId = req.params.id || req.params.eventId;
@@ -94,7 +111,7 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
 // POST create client event (admin)
 router.post('/', requireAdminAuth, upload.single('background'), async (req, res, next) => {
   try {
-    const { brideName, groomName, password } = req.body;
+    const { brideName, groomName, password, heroFocalX, heroFocalY } = req.body;
 
     if (!brideName || !groomName || !password) {
       return res.status(400).json({ ok: false, message: 'Bride name, groom name, and password are required' });
@@ -111,7 +128,14 @@ router.post('/', requireAdminAuth, upload.single('background'), async (req, res,
       backgroundImage = saveGalleryFile(req.file.buffer, filename, folder);
     }
 
-    const event = await ClientEvent.create({ brideName, groomName, password, backgroundImage });
+    const event = await ClientEvent.create({
+      brideName,
+      groomName,
+      password,
+      backgroundImage,
+      heroFocalX: parseFocal(heroFocalX),
+      heroFocalY: parseFocal(heroFocalY),
+    });
     res.status(201).json({ ok: true, event });
   } catch (err) {
     next(err);
@@ -126,11 +150,13 @@ router.put('/:id', requireAdminAuth, upload.single('background'), async (req, re
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const { brideName, groomName, password, isActive } = req.body;
+    const { brideName, groomName, password, isActive, heroFocalX, heroFocalY } = req.body;
     if (brideName !== undefined) event.brideName = brideName;
     if (groomName !== undefined) event.groomName = groomName;
     if (password !== undefined) event.password = password;
     if (isActive !== undefined) event.isActive = isActive === 'true' || isActive === true;
+    if (heroFocalX !== undefined) event.heroFocalX = parseFocal(heroFocalX, event.heroFocalX ?? 50);
+    if (heroFocalY !== undefined) event.heroFocalY = parseFocal(heroFocalY, event.heroFocalY ?? 50);
 
     if (req.file) {
       if (!allowedExtensions.images.includes(req.file.mimetype)) {
@@ -222,12 +248,7 @@ router.post('/access', async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: {
-        _id: event._id,
-        brideName: event.brideName,
-        groomName: event.groomName,
-        backgroundImage: event.backgroundImage,
-      },
+      event: publicEventPayload(event),
     });
   } catch (err) {
     next(err);
@@ -248,12 +269,7 @@ router.get('/access/check', async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: {
-        _id: event._id,
-        brideName: event.brideName,
-        groomName: event.groomName,
-        backgroundImage: event.backgroundImage,
-      },
+      event: publicEventPayload(event),
     });
   } catch (err) {
     next(err);
@@ -276,12 +292,7 @@ router.get('/:id/details', requireClientAccess, async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: {
-        _id: event._id,
-        brideName: event.brideName,
-        groomName: event.groomName,
-        backgroundImage: event.backgroundImage,
-      },
+      event: publicEventPayload(event),
       folders: folderCounts,
     });
   } catch (err) {
