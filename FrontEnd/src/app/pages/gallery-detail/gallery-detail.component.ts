@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren, ViewChild, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -29,6 +29,11 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   event: GalleryEvent | null = null;
   images: GalleryImage[] = [];
+  displayedImages: GalleryImage[] = [];
+  masonryColumns: { images: GalleryImage[] }[] = [];
+  columnCount = 4;
+  pageSize = 20;
+
   loading = true;
   collectionId = '';
   eventId = '';
@@ -60,6 +65,21 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     return isPlatformBrowser(this.platformId);
   }
 
+  @HostListener('window:resize')
+  onResize(): void {
+    this.calculateColumnCount();
+  }
+
+  @HostListener('window:scroll', [])
+  onScroll(): void {
+    if (!this.isBrowser || this.displayedImages.length === this.images.length) return;
+    const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
+    const max = document.documentElement.scrollHeight;
+    if (pos > max - 400) {
+      this.loadMoreImages();
+    }
+  }
+
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
       this.collectionId = params.get('collectionId') || '';
@@ -70,7 +90,10 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
         this.eventId = id;
         this.event = null;
         this.images = [];
+        this.displayedImages = [];
+        this.masonryColumns = [];
       }
+      this.calculateColumnCount();
       this.fetchEvent();
     });
 
@@ -142,11 +165,45 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   /** Grid mounts after async load; schedule observe so IntersectionObserver runs like on home. */
   private scheduleObserveGrid(): void {
-    if (!this.isBrowser || this.images.length === 0) return;
+    if (!this.isBrowser || this.displayedImages.length === 0) return;
     queueMicrotask(() => {
       this.observeItems();
       setTimeout(() => this.observeItems(), 0);
     });
+  }
+
+  loadMoreImages(): void {
+    const nextImages = this.images.slice(this.displayedImages.length, this.displayedImages.length + this.pageSize);
+    if (nextImages.length > 0) {
+      const startIndex = this.displayedImages.length;
+      this.displayedImages = [...this.displayedImages, ...nextImages];
+      nextImages.forEach((img, idx) => {
+        const globalIndex = startIndex + idx;
+        this.masonryColumns[globalIndex % this.columnCount].images.push(img);
+      });
+      this.scheduleObserveGrid();
+    }
+  }
+
+  private calculateColumnCount(): void {
+    if (!this.isBrowser) return;
+    const width = window.innerWidth;
+    let newCount = 4;
+    if (width <= 768) newCount = 2;
+    else if (width <= 1024) newCount = 3;
+    
+    if (newCount !== this.columnCount || this.masonryColumns.length === 0) {
+      this.columnCount = newCount;
+      this.rebuildMasonry();
+    }
+  }
+
+  private rebuildMasonry(): void {
+    this.masonryColumns = Array.from({ length: this.columnCount }, () => ({ images: [] }));
+    this.displayedImages.forEach((img, idx) => {
+      this.masonryColumns[idx % this.columnCount].images.push(img);
+    });
+    this.scheduleObserveGrid();
   }
 
   private fetchEvent(): void {
@@ -159,8 +216,9 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (res) => {
         this.event = res.event;
         this.images = res.images;
+        this.displayedImages = this.images.slice(0, this.pageSize);
+        this.rebuildMasonry();
         this.loading = false;
-        this.scheduleObserveGrid();
       },
       error: () => {
         this.loading = false;
@@ -230,6 +288,8 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     this.galleryService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
         this.images = this.images.filter(img => img._id !== imageId);
+        this.displayedImages = this.displayedImages.filter(img => img._id !== imageId);
+        this.rebuildMasonry();
         this.showDeleteDialog = false;
         this.deleteTarget = null;
       },
@@ -277,9 +337,12 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     return parts.join(', ');
   }
 
-  openLightbox(index: number): void {
-    this.lightboxStart = index;
-    this.lightboxOpen = true;
+  openLightbox(image: GalleryImage): void {
+    const idx = this.images.findIndex((img) => img._id === image._id);
+    if (idx !== -1) {
+      this.lightboxStart = idx;
+      this.lightboxOpen = true;
+    }
   }
 
   closeLightbox(): void {

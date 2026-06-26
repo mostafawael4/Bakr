@@ -442,6 +442,8 @@
     overflow: hidden;
     position: relative;
     cursor: pointer;
+    background-color: var(--color-page);
+    min-height: 100px;
 
     &.is-cover {
       outline: 2px solid var(--color-interactive);
@@ -589,8 +591,7 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 1024px) {
-}
+@media (max-width: 1024px) {}
 
 @media (max-width: 768px) {
   .event-hero {
@@ -599,7 +600,10 @@
 
   .images-grid {
     gap: 0.75rem;
-    .masonry-column { gap: 0.75rem; }
+
+    .masonry-column {
+      gap: 0.75rem;
+    }
   }
 
   .folders-grid {
