@@ -14,6 +14,6 @@ export const adminGuard: CanActivateFn = () => {
   return auth.sessionChecked$.pipe(
     filter((checked) => checked),
     take(1),
-    map(() => (auth.isLoggedIn ? true : router.createUrlTree(['/']))),
+    map(() => (auth.isLoggedIn ? true : router.createUrlTree(['/home']))),
   );
 };

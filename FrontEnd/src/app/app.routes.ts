@@ -2,7 +2,8 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'home', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
   { path: 'packages', loadComponent: () => import('./pages/packages/packages.component').then(m => m.PackagesComponent) },
   { path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then(m => m.GalleryComponent) },
   { path: 'gallery/:collectionId', loadComponent: () => import('./pages/gallery-collection/gallery-collection.component').then(m => m.GalleryCollectionComponent) },
@@ -14,5 +15,5 @@ export const routes: Routes = [
   { path: 'event/:eventId', loadComponent: () => import('./pages/event-detail/event-detail.component').then(m => m.EventDetailComponent) },
   { path: 'feedbacks', loadComponent: () => import('./pages/feedbacks/feedbacks.component').then(m => m.FeedbacksComponent) },
   { path: 'admin', loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) },
-  { path: '**', redirectTo: '' },
+  { path: '**', loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent) },
 ];

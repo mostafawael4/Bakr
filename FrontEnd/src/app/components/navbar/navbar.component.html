@@ -1,6 +1,6 @@
 <nav class="navbar">
   <div class="navbar-container">
-    <a routerLink="/" class="navbar-logo" aria-label="Home" (click)="closeMenu()">
+    <a routerLink="/home" class="navbar-logo" aria-label="Home" (click)="closeMenu()">
       <span class="navbar-brand">ABO BAKR</span>
     </a>
 
@@ -12,7 +12,7 @@
 
     <ul class="nav-links" [class.open]="menuOpen">
       <li>
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
+        <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
       </li>
       <li>
         <a routerLink="/packages" routerLinkActive="active" (click)="closeMenu()">Packages</a>

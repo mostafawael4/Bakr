@@ -32,7 +32,7 @@ export class AdminLoginComponent {
     this.authService.login(this.email, this.password).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/']);
+        this.router.navigate(['/home']);
       },
       error: (err) => {
         this.loading = false;
