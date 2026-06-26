@@ -33,6 +33,7 @@ export class ImageLightboxComponent implements OnChanges, OnDestroy {
   @Input() visible = false;
   /** Index to show when opening. */
   @Input() startIndex = 0;
+  @Input() showDownload = false;
 
   @Output() closed = new EventEmitter<void>();
   @Output() downloadRequested = new EventEmitter<number>();

@@ -246,7 +246,7 @@
 }
 
 <!-- Lightbox -->
-<app-image-lightbox [visible]="lightboxOpen" [slides]="lightboxSlides" [startIndex]="lightboxStart"
+<app-image-lightbox [visible]="lightboxOpen" [slides]="lightboxSlides" [startIndex]="lightboxStart" [showDownload]="true"
   (closed)="closeLightbox()" (downloadRequested)="downloadLightboxImage($event)" />
 
 <!-- Delete Image Dialog -->
