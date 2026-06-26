@@ -357,11 +357,17 @@
     position: relative;
     cursor: pointer;
 
+    &.is-cover {
+      outline: 2px solid var(--color-interactive);
+      outline-offset: 2px;
+    }
+
     &:hover img {
       transform: scale(1.03);
     }
 
-    &:hover .img-delete-btn {
+    &:hover .img-delete-btn,
+    &:hover .img-cover-btn {
       opacity: 1;
     }
 
@@ -370,6 +376,36 @@
       display: block;
       transition: transform 0.5s ease;
     }
+  }
+}
+
+.img-cover-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--color-nav);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &.is-active {
+    opacity: 1;
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+  }
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
   }
 }
 
@@ -467,6 +503,10 @@
   }
 
   .img-delete-btn {
+    opacity: 1;
+  }
+
+  .img-cover-btn {
     opacity: 1;
   }
 }

@@ -18,6 +18,43 @@ const upload = multer({
 
 const router = Router();
 
+async function resolveFolderCover(eventId, folderKey, coverImageId) {
+  if (coverImageId) {
+    const chosen = await ClientEventImage.findOne({ _id: coverImageId, eventId, folderKey });
+    if (chosen) return chosen;
+  }
+  return ClientEventImage.findOne({ eventId, folderKey }).sort({ uploadedAt: 1 });
+}
+
+async function buildFolders(event) {
+  const keys = await ClientEventImage.distinct('folderKey', { eventId: event._id });
+  const covers = event.folderCovers || {};
+
+  return Promise.all(
+    keys.map(async (key) => {
+      const count = await ClientEventImage.countDocuments({ eventId: event._id, folderKey: key });
+      const coverImg = await resolveFolderCover(event._id, key, covers[key]);
+      return {
+        key,
+        count,
+        coverImage: coverImg ? (coverImg.medium || coverImg.url) : null,
+        coverImageId: coverImg ? coverImg._id.toString() : null,
+      };
+    })
+  );
+}
+
+function clearFolderCoverIfMatch(event, folderKey, imageId) {
+  const covers = event.folderCovers || {};
+  if (covers[folderKey]?.toString() === imageId.toString()) {
+    delete covers[folderKey];
+    event.folderCovers = covers;
+    event.markModified('folderCovers');
+    return true;
+  }
+  return false;
+}
+
 /* ── Helper: check client session ── */
 function requireClientAccess(req, res, next) {
   const eventId = req.params.id || req.params.eventId;
@@ -235,15 +272,7 @@ router.get('/:id/details', requireClientAccess, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const folders = await ClientEventImage.distinct('folderKey', { eventId: event._id });
-    const folderCounts = await Promise.all(
-      folders.map(async (key) => {
-        const count = await ClientEventImage.countDocuments({ eventId: event._id, folderKey: key });
-        // Get first image as folder cover
-        const coverImg = await ClientEventImage.findOne({ eventId: event._id, folderKey: key }).sort({ uploadedAt: 1 });
-        return { key, count, coverImage: coverImg ? (coverImg.medium || coverImg.url) : null };
-      })
-    );
+    const folderCounts = await buildFolders(event);
 
     res.json({
       ok: true,
@@ -287,16 +316,47 @@ router.get('/:id/folders', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const folders = await ClientEventImage.distinct('folderKey', { eventId: event._id });
-    const folderCounts = await Promise.all(
-      folders.map(async (key) => {
-        const count = await ClientEventImage.countDocuments({ eventId: event._id, folderKey: key });
-        const coverImg = await ClientEventImage.findOne({ eventId: event._id, folderKey: key }).sort({ uploadedAt: 1 });
-        return { key, count, coverImage: coverImg ? (coverImg.medium || coverImg.url) : null };
-      })
-    );
+    const folderCounts = await buildFolders(event);
 
     res.json({ ok: true, folders: folderCounts });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT set folder cover image (admin)
+router.put('/:id/folders/:folderKey/cover', requireAdminAuth, async (req, res, next) => {
+  try {
+    const event = await ClientEvent.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ ok: false, message: 'Event not found' });
+    }
+
+    const { imageId } = req.body;
+    if (!imageId) {
+      return res.status(400).json({ ok: false, message: 'Image ID is required' });
+    }
+
+    const image = await ClientEventImage.findOne({
+      _id: imageId,
+      eventId: event._id,
+      folderKey: req.params.folderKey,
+    });
+
+    if (!image) {
+      return res.status(404).json({ ok: false, message: 'Image not found in this folder' });
+    }
+
+    event.folderCovers = event.folderCovers || {};
+    event.folderCovers[req.params.folderKey] = image._id;
+    event.markModified('folderCovers');
+    await event.save();
+
+    res.json({
+      ok: true,
+      coverImageId: image._id.toString(),
+      coverImage: image.medium || image.url,
+    });
   } catch (err) {
     next(err);
   }
@@ -399,6 +459,11 @@ router.delete('/:eventId/images/:imageId', requireAdminAuth, async (req, res, ne
       return res.status(404).json({ ok: false, message: 'Image not found' });
     }
 
+    const event = await ClientEvent.findById(req.params.eventId);
+    if (event && clearFolderCoverIfMatch(event, image.folderKey, image._id)) {
+      await event.save();
+    }
+
     const filesToDelete = [path.join('.', image.url)];
     if (image.thumbnail) filesToDelete.push(path.join('.', image.thumbnail));
     if (image.medium) filesToDelete.push(path.join('.', image.medium));
@@ -422,6 +487,13 @@ router.delete('/:eventId/folders/:folderKey', requireAdminAuth, async (req, res,
       eventId: req.params.eventId,
       folderKey: req.params.folderKey,
     });
+
+    const event = await ClientEvent.findById(req.params.eventId);
+    if (event?.folderCovers?.[req.params.folderKey]) {
+      delete event.folderCovers[req.params.folderKey];
+      event.markModified('folderCovers');
+      await event.save();
+    }
 
     for (const img of images) {
       const filesToDelete = [path.join('.', img.url)];

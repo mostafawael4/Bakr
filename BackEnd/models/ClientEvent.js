@@ -6,6 +6,7 @@ const clientEventSchema = new mongoose.Schema({
   password: { type: String, required: true },
   backgroundImage: { type: String, default: null },
   isActive: { type: Boolean, default: true },
+  folderCovers: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
 });
 

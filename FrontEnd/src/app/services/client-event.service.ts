@@ -19,6 +19,7 @@ export interface ClientEventFolder {
   key: string;
   count: number;
   coverImage: string | null;
+  coverImageId?: string | null;
 }
 
 export interface ClientEventImage {
@@ -73,6 +74,14 @@ export class ClientEventService {
 
   deleteFolder(eventId: string, folderKey: string): Observable<{ ok: boolean; message: string }> {
     return this.http.delete<{ ok: boolean; message: string }>(`${this.url}/${eventId}/folders/${encodeURIComponent(folderKey)}`, { withCredentials: true });
+  }
+
+  setFolderCover(eventId: string, folderKey: string, imageId: string): Observable<{ ok: boolean; coverImageId: string; coverImage: string }> {
+    return this.http.put<{ ok: boolean; coverImageId: string; coverImage: string }>(
+      `${this.url}/${eventId}/folders/${encodeURIComponent(folderKey)}/cover`,
+      { imageId },
+      { withCredentials: true },
+    );
   }
 
   /* ── Client — access ── */

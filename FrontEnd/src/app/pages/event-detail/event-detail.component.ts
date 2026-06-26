@@ -38,6 +38,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   // Current view state
   currentView: 'folders' | 'images' = 'folders';
   selectedFolder: string = '';
+  folderCoverImageId: string | null = null;
 
   // Create folder
   showFolderInput = false;
@@ -159,6 +160,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   openFolder(folder: ClientEventFolder): void {
     this.selectedFolder = folder.key;
+    this.folderCoverImageId = folder.coverImageId ?? null;
     this.currentView = 'images';
     this.loadFolderImages();
   }
@@ -166,6 +168,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   goBackToFolders(): void {
     this.currentView = 'folders';
     this.selectedFolder = '';
+    this.folderCoverImageId = null;
     this.images = [];
     // Refresh folders
     if (this.isAdmin) {
@@ -274,6 +277,14 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.clientEventService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
         this.images = this.images.filter(img => img._id !== imageId);
+        if (this.folderCoverImageId === imageId) {
+          this.folderCoverImageId = null;
+          const folder = this.folders.find(f => f.key === this.selectedFolder);
+          if (folder) {
+            folder.coverImageId = null;
+            folder.coverImage = null;
+          }
+        }
         this.showDeleteDialog = false;
         this.deleteTarget = null;
       },
@@ -314,6 +325,27 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   cancelDeleteFolder(): void {
     this.showDeleteFolderDialog = false;
     this.deleteFolderTarget = null;
+  }
+
+  /* ── Admin: Set folder cover ── */
+  isFolderCover(image: ClientEventImage): boolean {
+    return this.folderCoverImageId === image._id;
+  }
+
+  setAsFolderCover(image: ClientEventImage, e: MouseEvent): void {
+    e.stopPropagation();
+    if (this.isFolderCover(image)) return;
+
+    this.clientEventService.setFolderCover(this.eventId, this.selectedFolder, image._id).subscribe({
+      next: (res) => {
+        this.folderCoverImageId = res.coverImageId;
+        const folder = this.folders.find(f => f.key === this.selectedFolder);
+        if (folder) {
+          folder.coverImageId = res.coverImageId;
+          folder.coverImage = res.coverImage;
+        }
+      },
+    });
   }
 
   /* ── Lightbox ── */
