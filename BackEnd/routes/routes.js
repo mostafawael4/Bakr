@@ -4,6 +4,7 @@ import homeRouter from './home.js';
 import packageRouter from './package.js';
 import galleryRouter from './gallery.js';
 import clientEventRouter from './clientEvent.js';
+import feedbackRouter from './feedback.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/home', homeRouter);
 router.use('/packages', packageRouter);
 router.use('/gallery', galleryRouter);
 router.use('/client-events', clientEventRouter);
+router.use('/feedbacks', feedbackRouter);
 
 export default router;
