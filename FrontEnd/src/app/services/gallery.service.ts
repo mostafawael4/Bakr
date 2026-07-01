@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -81,8 +81,12 @@ export class GalleryService {
 
   /* ── Images ── */
 
-  uploadImages(eventId: string, formData: FormData): Observable<{ ok: boolean; images: GalleryImage[] }> {
-    return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/events/${eventId}/images`, formData, { withCredentials: true });
+  uploadImages(eventId: string, formData: FormData): Observable<HttpEvent<{ ok: boolean; images: GalleryImage[] }>> {
+    return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/events/${eventId}/images`, formData, { 
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
   deleteImage(eventId: string, imageId: string): Observable<{ ok: boolean; message: string }> {

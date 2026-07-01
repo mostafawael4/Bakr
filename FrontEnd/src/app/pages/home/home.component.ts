@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren, ViewChild } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
@@ -60,6 +60,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private revealObserver: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
+  private fileProcessingScores: Record<number, number> = {};
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -71,19 +72,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.wsService.connect();
       this.wsSub = this.wsService.messages$.subscribe((msg) => {
         if (msg.type === 'upload-progress') {
+          const progress = this.calcProgress(msg.step, msg.current, msg.total);
+
           this.uploadState = {
             ...this.uploadState,
-            currentFile: msg.current,
-            statusLabel: this.buildStatusLabel(msg.step, msg.current, msg.total),
-            percent: this.calcPercent(msg.step, msg.current, msg.total),
+            currentFile: progress.equivalentCurrent,
+            statusLabel: `Processing images (${progress.equivalentCurrent}/${msg.total})`,
+            percent: progress.percent,
           };
 
           if (msg.step === 'complete') {
             this.uploadState.successCount++;
           }
 
-          if (msg.step === 'complete' && msg.current === msg.total) {
-            this.uploadState = { ...this.uploadState, done: true };
+          if (this.uploadState.successCount === msg.total) {
+            this.uploadState = { ...this.uploadState, done: true, currentFile: msg.total, statusLabel: `Completed (${msg.total}/${msg.total})` };
           }
         }
       });
@@ -175,14 +178,36 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       failCount: 0,
     };
 
+    this.fileProcessingScores = {};
+
     const formData = new FormData();
     for (let i = 0; i < input.files.length; i++) {
       formData.append('images', input.files[i]);
     }
 
-    this.http.post<{ ok: boolean; images: any[] }>(`${environment.apiUrl}/home/upload`, formData, { withCredentials: true }).subscribe({
-      next: () => {
-        input.value = '';
+    this.http.post<{ ok: boolean; images: any[] }>(`${environment.apiUrl}/home/upload`, formData, { 
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    }).subscribe({
+      next: (event: HttpEvent<any>) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          if (event.total) {
+            const networkPercent = Math.round((100 * event.loaded) / event.total);
+            this.uploadState = {
+              ...this.uploadState,
+              percent: Math.round(networkPercent * 0.4),
+              statusLabel: `Uploading to server... ${networkPercent}%`,
+            };
+          }
+        } else if (event.type === HttpEventType.Response) {
+          input.value = '';
+          this.uploadState = {
+            ...this.uploadState,
+            statusLabel: 'Server processing started...',
+            percent: 40
+          };
+        }
       },
       error: () => {
         this.uploadState = {
@@ -200,20 +225,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchImages();
   }
 
-  private buildStatusLabel(step: string, current: number, total: number): string {
-    if (step === 'saved') return `Saving ${current}/${total}...`;
-    if (step === 'thumb') return `Processing thumbnail (${current}/${total})`;
-    if (step === 'medium') return `Processing medium (${current}/${total})`;
-    if (step === 'hero') return `Processing hero (${current}/${total})`;
-    if (step === 'complete') return `Processed ${current}/${total}`;
-    return 'Uploading...';
-  }
-
-  private calcPercent(step: string, current: number, total: number): number {
-    const stepsPerFile = 5;
+  private calcProgress(step: string, current: number, total: number): { percent: number; equivalentCurrent: number } {
     const stepMap: Record<string, number> = { uploading: 0, saved: 1, thumb: 2, medium: 3, hero: 4, complete: 5 };
-    const fileProgress = (stepMap[step] ?? 0) / stepsPerFile;
-    return Math.round(((current - 1 + fileProgress) / total) * 100);
+    this.fileProcessingScores[current] = stepMap[step] ?? 0;
+    
+    let totalScore = 0;
+    for (let i = 1; i <= total; i++) {
+      totalScore += (this.fileProcessingScores[i] || 0);
+    }
+    const maxScore = total * 5;
+    const processingPercent = Math.round((totalScore / maxScore) * 60);
+    const equivalentCurrent = Math.floor((totalScore / maxScore) * total);
+    return { percent: 40 + processingPercent, equivalentCurrent };
   }
 
   askDelete(image: HomeImage): void {

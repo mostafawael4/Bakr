@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -66,8 +66,12 @@ export class ClientEventService {
     return this.http.get<{ ok: boolean; folders: ClientEventFolder[] }>(`${this.url}/${eventId}/folders`, { withCredentials: true });
   }
 
-  uploadImages(eventId: string, formData: FormData): Observable<{ ok: boolean; images: ClientEventImage[] }> {
-    return this.http.post<{ ok: boolean; images: ClientEventImage[] }>(`${this.url}/${eventId}/images`, formData, { withCredentials: true });
+  uploadImages(eventId: string, formData: FormData): Observable<HttpEvent<{ ok: boolean; images: ClientEventImage[] }>> {
+    return this.http.post<{ ok: boolean; images: ClientEventImage[] }>(`${this.url}/${eventId}/images`, formData, { 
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
   deleteImage(eventId: string, imageId: string): Observable<{ ok: boolean; message: string }> {
