@@ -65,4 +65,12 @@ export class AuthService {
       tap(() => this.userSubject.next(null))
     );
   }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.put<{ ok: boolean; message: string }>(
+      `${environment.apiUrl}/auth/change-password`,
+      { currentPassword, newPassword },
+      { withCredentials: true }
+    );
+  }
 }

@@ -68,4 +68,33 @@ router.get('/me', requireAdminAuth, async (req, res, next) => {
   }
 });
 
+router.put('/change-password', requireAdminAuth, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ ok: false, message: 'Current password is required and new password must be at least 8 characters' });
+    }
+
+    const user = await User.findById(req.session.adminId);
+    if (!user) {
+      return res.status(404).json({ ok: false, message: 'User not found' });
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ ok: false, message: 'Invalid current password' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    user.passwordHash = passwordHash;
+    await user.save();
+
+    res.json({ ok: true, message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
+

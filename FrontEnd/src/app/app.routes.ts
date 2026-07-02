@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './guards/admin.guard';
+import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -14,6 +15,6 @@ export const routes: Routes = [
   { path: 'event-access/:eventId', loadComponent: () => import('./pages/event-access/event-access.component').then(m => m.EventAccessComponent) },
   { path: 'event/:eventId', loadComponent: () => import('./pages/event-detail/event-detail.component').then(m => m.EventDetailComponent) },
   { path: 'feedbacks', loadComponent: () => import('./pages/feedbacks/feedbacks.component').then(m => m.FeedbacksComponent) },
-  { path: 'admin', loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) },
+  { path: 'admin', canActivate: [guestGuard], loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) },
   { path: '**', loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent) },
 ];
