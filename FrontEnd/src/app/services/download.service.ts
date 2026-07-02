@@ -31,7 +31,7 @@ export class DownloadService {
     if (!this.isBrowser) return;
 
     try {
-      const response = await fetch(imageUrl, { mode: 'cors', credentials: 'include' });
+      const response = await fetch(imageUrl, { mode: 'cors' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
       this.saveBlob(blob, filename);
@@ -77,7 +77,7 @@ export class DownloadService {
         const batch = images.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map(async (img) => {
-            const res = await fetch(img.url, { mode: 'cors', credentials: 'include' });
+            const res = await fetch(img.url, { mode: 'cors' });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return { name: img.originalName, data: await res.arrayBuffer() };
           }),

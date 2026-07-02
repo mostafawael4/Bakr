@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ClientEventService, ClientEventFolder, ClientEventImage } from '../../services/client-event.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { B2UploadService } from '../../services/b2-upload.service';
 import { DownloadService, DownloadProgress } from '../../services/download.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
@@ -28,6 +29,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   private clientEventService = inject(ClientEventService);
   private wsService = inject(WebSocketService);
   private downloadService = inject(DownloadService);
+  private b2UploadService = inject(B2UploadService);
   authService = inject(AuthService);
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -307,64 +309,96 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.fileInput.nativeElement.click();
   }
 
-  onFilesSelected(event: Event): void {
+  async onFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
+    const fileList = Array.from(input.files);
     let totalSize = 0;
-    for (let i = 0; i < input.files.length; i++) {
-      totalSize += input.files[i].size;
+    for (const file of fileList) {
+      totalSize += file.size;
     }
 
     this.uploadState = {
       visible: true,
-      totalFiles: input.files.length,
+      totalFiles: fileList.length,
       totalSize,
       currentFile: 0,
       percent: 0,
-      statusLabel: 'Uploading...',
+      statusLabel: 'Preparing upload...',
       done: false,
       successCount: 0,
       failCount: 0,
     };
 
-    this.fileProcessingScores = {};
+    const uploadedImages: any[] = [];
+    let completedCount = 0;
 
-    const formData = new FormData();
-    formData.append('folderKey', this.selectedFolder);
-    for (let i = 0; i < input.files.length; i++) {
-      formData.append('images', input.files[i]);
-    }
+    const progressSub = this.b2UploadService.progress$.subscribe((p) => {
+      const currentFileIndex = fileList.findIndex((f) => f.name === p.filename);
+      if (currentFileIndex !== -1) {
+        const fileWeight = 100 / fileList.length;
+        const totalCompletedWeight = completedCount * fileWeight;
+        const currentFileWeight = (p.percent / 100) * fileWeight;
+        const overallPercent = Math.round(totalCompletedWeight + currentFileWeight);
 
-    this.clientEventService.uploadImages(this.eventId, formData).subscribe({
-      next: (event: HttpEvent<any>) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          if (event.total) {
-            const networkPercent = Math.round((100 * event.loaded) / event.total);
-            this.uploadState = {
-              ...this.uploadState,
-              percent: Math.round(networkPercent * 0.4),
-              statusLabel: `Uploading to server... ${networkPercent}%`,
-            };
-          }
-        } else if (event.type === HttpEventType.Response) {
-          input.value = '';
-          this.uploadState = {
-            ...this.uploadState,
-            statusLabel: 'Server processing started...',
-            percent: 40
-          };
-        }
-      },
-      error: () => {
         this.uploadState = {
           ...this.uploadState,
-          failCount: this.uploadState.totalFiles - this.uploadState.successCount,
-          done: true,
+          percent: Math.min(99, overallPercent),
+          currentFile: completedCount + 1,
+          statusLabel: `Uploading ${p.filename} (${p.step})... ${p.percent}%`,
         };
-        input.value = '';
-      },
+      }
     });
+
+    for (const file of fileList) {
+      try {
+        const result = await this.b2UploadService.uploadImage(file, `gallery/client-event-${this.eventId}`);
+        uploadedImages.push(result);
+        completedCount++;
+        this.uploadState.successCount++;
+      } catch (err) {
+        this.uploadState.failCount++;
+        completedCount++;
+      }
+    }
+
+    progressSub.unsubscribe();
+
+    if (uploadedImages.length > 0) {
+      this.uploadState = {
+        ...this.uploadState,
+        percent: 99,
+        statusLabel: 'Saving details to database...',
+      };
+
+      this.clientEventService.uploadImages(this.eventId, this.selectedFolder, uploadedImages).subscribe({
+        next: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            percent: 100,
+            statusLabel: `Completed successfully (${this.uploadState.successCount}/${fileList.length})`,
+          };
+          input.value = '';
+        },
+        error: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            statusLabel: 'Failed to save upload info to database',
+          };
+          input.value = '';
+        },
+      });
+    } else {
+      this.uploadState = {
+        ...this.uploadState,
+        done: true,
+        statusLabel: 'All uploads failed',
+      };
+      input.value = '';
+    }
   }
 
   onUploadDismissed(): void {
@@ -486,12 +520,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   private saveHeroFocal(heroFocalX: number, heroFocalY: number): void {
     if (this.savingHeroFocal) return;
 
-    const formData = new FormData();
-    formData.append('heroFocalX', String(heroFocalX));
-    formData.append('heroFocalY', String(heroFocalY));
-
     this.savingHeroFocal = true;
-    this.clientEventService.updateEvent(this.eventId, formData).subscribe({
+    this.clientEventService.updateEvent(this.eventId, { heroFocalX, heroFocalY }).subscribe({
       next: () => {
         this.savingHeroFocal = false;
       },

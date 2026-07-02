@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpEvent } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -48,12 +48,30 @@ export class ClientEventService {
     return this.http.get<{ ok: boolean; events: ClientEvent[] }>(this.url, { withCredentials: true });
   }
 
-  createEvent(formData: FormData): Observable<{ ok: boolean; event: ClientEvent }> {
-    return this.http.post<{ ok: boolean; event: ClientEvent }>(this.url, formData, { withCredentials: true });
+  createEvent(payload: {
+    brideName: string;
+    groomName: string;
+    password: string;
+    backgroundImage: string | null;
+    heroFocalX?: number;
+    heroFocalY?: number;
+  }): Observable<{ ok: boolean; event: ClientEvent }> {
+    return this.http.post<{ ok: boolean; event: ClientEvent }>(this.url, payload, { withCredentials: true });
   }
 
-  updateEvent(id: string, formData: FormData): Observable<{ ok: boolean; event: ClientEvent }> {
-    return this.http.put<{ ok: boolean; event: ClientEvent }>(`${this.url}/${id}`, formData, { withCredentials: true });
+  updateEvent(
+    id: string,
+    payload: {
+      brideName?: string;
+      groomName?: string;
+      password?: string;
+      backgroundImage?: string | null;
+      heroFocalX?: number;
+      heroFocalY?: number;
+      isActive?: boolean;
+    }
+  ): Observable<{ ok: boolean; event: ClientEvent }> {
+    return this.http.put<{ ok: boolean; event: ClientEvent }>(`${this.url}/${id}`, payload, { withCredentials: true });
   }
 
   deleteEvent(id: string): Observable<{ ok: boolean; message: string }> {
@@ -66,12 +84,12 @@ export class ClientEventService {
     return this.http.get<{ ok: boolean; folders: ClientEventFolder[] }>(`${this.url}/${eventId}/folders`, { withCredentials: true });
   }
 
-  uploadImages(eventId: string, formData: FormData): Observable<HttpEvent<{ ok: boolean; images: ClientEventImage[] }>> {
-    return this.http.post<{ ok: boolean; images: ClientEventImage[] }>(`${this.url}/${eventId}/images`, formData, { 
-      withCredentials: true,
-      reportProgress: true,
-      observe: 'events'
-    });
+  uploadImages(eventId: string, folderKey: string, images: any[]): Observable<{ ok: boolean; images: ClientEventImage[] }> {
+    return this.http.post<{ ok: boolean; images: ClientEventImage[] }>(
+      `${this.url}/${eventId}/images`,
+      { folderKey, images },
+      { withCredentials: true }
+    );
   }
 
   deleteImage(eventId: string, imageId: string): Observable<{ ok: boolean; message: string }> {
