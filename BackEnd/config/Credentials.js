@@ -1,0 +1,15 @@
+export default {
+  PORT: process.env.PORT || 3000,
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  MONGO_URI: process.env.MONGO_URI,
+  SESSION_SECRET: process.env.SESSION_SECRET,
+  FRONTEND_URL: process.env.FRONTEND_URL,
+  UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads/',
+  TEMP_DIR: process.env.TEMP_DIR || 'tmp/',
+  B2_KEY_ID: process.env.B2_KEY_ID,
+  B2_APP_KEY: process.env.B2_APP_KEY,
+  B2_BUCKET_ID: process.env.B2_BUCKET_ID,
+  B2_BUCKET_NAME: process.env.B2_BUCKET_NAME,
+  CDN_URL: process.env.CDN_URL,
+  OFFICIAL_CDN_URL: process.env.OFFICIAL_CDN_URL,
+};

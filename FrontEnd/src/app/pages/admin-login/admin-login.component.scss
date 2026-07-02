@@ -1,0 +1,180 @@
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background: radial-gradient(ellipse at top, #f5f3ef 0%, var(--color-page) 70%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 3rem 2.5rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(42, 37, 32, 0.12);
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.lock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background-color: var(--color-page);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  color: var(--color-interactive);
+  margin-bottom: 1rem;
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  color: var(--color-heading);
+  margin-bottom: 0.4rem;
+}
+
+.login-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-nav);
+}
+
+.error-message {
+  background-color: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.field {
+  margin-bottom: 1.25rem;
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--color-nav);
+    margin-bottom: 0.5rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background-color: var(--color-page);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-heading);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+      color: var(--color-caption);
+    }
+
+    &:focus {
+      border-color: var(--color-interactive);
+      box-shadow: 0 0 0 3px rgba(58, 52, 44, 0.12);
+    }
+  }
+}
+
+.password-wrapper {
+  position: relative;
+
+  input {
+    padding-right: 2.75rem;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-nav);
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-heading);
+    }
+  }
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.85rem;
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-interactive-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(42, 37, 32, 0.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-surface);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

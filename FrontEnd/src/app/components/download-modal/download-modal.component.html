@@ -1,0 +1,63 @@
+@if (state.visible) {
+<div class="dl-backdrop" (click)="state.done ? dismiss() : null">
+  <div class="dl-modal" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="dl-header">
+      @if (!state.done) {
+        <div class="dl-spinner" aria-hidden="true"></div>
+      } @else if (state.error) {
+        <div class="dl-icon dl-icon--error">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+      } @else {
+        <div class="dl-icon dl-icon--success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      }
+    </div>
+
+    <!-- Title -->
+    <h3 class="dl-title">
+      @if (!state.done) {
+        Preparing download…
+      } @else if (state.error) {
+        Download failed
+      } @else {
+        Download complete
+      }
+    </h3>
+
+    <!-- Folder name -->
+    <p class="dl-folder">{{ state.folderName }}</p>
+
+    <!-- Progress bar -->
+    @if (!state.done) {
+      <div class="dl-progress-track">
+        <div class="dl-progress-bar" [style.width.%]="state.percent"></div>
+      </div>
+      <p class="dl-status">
+        {{ state.downloadedFiles }} / {{ state.totalFiles }} images
+        <span class="dl-percent">{{ state.percent }}%</span>
+      </p>
+    }
+
+    <!-- Error message -->
+    @if (state.error) {
+      <p class="dl-error">{{ state.error }}</p>
+    }
+
+    <!-- Close button (only when done) -->
+    @if (state.done) {
+      <button type="button" class="dl-close-btn" (click)="dismiss()">Close</button>
+    }
+  </div>
+</div>
+}

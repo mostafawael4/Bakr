@@ -1,0 +1,114 @@
+<section class="gallery-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <a routerLink="/gallery" class="back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back to Gallery
+    </a>
+    @if (collection) {
+      <h1>{{ collection.name }}</h1>
+      <p class="subtitle">Browse events in this collection.</p>
+    }
+  </div>
+
+  <!-- Admin: Create Event Button -->
+  @if (authService.isLoggedIn) {
+    <div class="admin-actions">
+      <button class="btn-add" (click)="openCreate()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Event
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading && events.length === 0) {
+    <div class="empty-state">
+      <p>No events in this collection yet.</p>
+    </div>
+  }
+
+  <!-- Events Grid -->
+  @if (!loading && events.length > 0) {
+    <div class="collections-grid" [class.single]="events.length === 1">
+      @for (event of events; track event._id; let i = $index; let isLast = $last) {
+        <a
+          class="collection-card"
+          #cardItem
+          [class.odd-last]="isLast && events.length % 2 === 1"
+          [routerLink]="['/gallery', collectionId, event._id]"
+          [style.--delay]="(i % 6) * 0.12 + 's'"
+        >
+          <!-- Image -->
+          <div class="card-image">
+            @if (event.coverImage) {
+              <img [src]="getCoverUrl(event.coverImage)" [alt]="event.name" />
+            } @else {
+              <div class="card-image-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+            }
+
+            <!-- Admin Controls -->
+            @if (authService.isLoggedIn) {
+              <div class="card-admin">
+                <button class="btn-edit" (click)="openEdit(event, $event)" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="btn-delete" (click)="askDelete(event, $event)" title="Delete">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Text -->
+          <div class="card-info">
+            <span class="card-label">View Gallery</span>
+            <h2 class="card-name">{{ event.name }}</h2>
+            @if (event.imageCount) {
+              <p class="card-count">{{ event.imageCount }} photo{{ event.imageCount > 1 ? 's' : '' }}</p>
+            }
+          </div>
+        </a>
+      }
+    </div>
+  }
+</section>
+
+<!-- Event Modal -->
+<app-gallery-event-modal
+  [visible]="showModal"
+  [editEvent]="editTarget"
+  mode="event"
+  (closed)="onModalClosed()"
+  (saved)="onModalSaved($event)"
+/>
+
+<!-- Delete Confirmation -->
+<app-confirm-dialog
+  [visible]="showDeleteDialog"
+  title="Delete Event"
+  [message]="'Delete \'' + (deleteTarget?.name || '') + '\' and all its photos? This cannot be undone.'"
+  confirmText="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>

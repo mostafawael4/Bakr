@@ -1,0 +1,30 @@
+{
+  "name": "bakr-backend",
+  "version": "1.0.0",
+  "description": "Bakr photo backend API",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.5.0",
+    "morgan": "^1.10.0",
+    "multer": "^2.1.1",
+    "sharp": "^0.33.4",
+    "uuid": "^14.0.0",
+    "winston": "^3.13.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

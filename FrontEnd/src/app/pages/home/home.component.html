@@ -1,0 +1,167 @@
+<!-- Page Header -->
+<div class="page-header scroll-reveal" #scrollReveal>
+  <h1>Abo Bakr Photography</h1>
+  <p class="subtitle">Capturing your most precious moments with artistry and passion.</p>
+</div>
+
+<!-- Hidden file input -->
+<input #fileInput type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden
+  (change)="onFilesSelected($event)" />
+
+<!-- Upload modal (separate component) -->
+<app-upload-modal [state]="uploadState" (dismissed)="onUploadDismissed()" />
+
+<!-- Loading: spinner until images are fetched so grid mount + observer animations stay in sync -->
+@if (loading) {
+<div class="loading-state" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <p class="loading-label">Loading gallery…</p>
+</div>
+}
+
+<!-- Error state -->
+@if (!loading && error) {
+<div class="state-container">
+  <p class="state-message">Failed to load images</p>
+  <button class="retry-btn" (click)="retry()">Try Again</button>
+</div>
+}
+
+<!-- Empty state -->
+@if (!loading && !error && images.length === 0) {
+<div class="state-container">
+  <p class="state-message">No images yet</p>
+</div>
+}
+
+<!-- Masonry image grid -->
+@if (!loading && !error && images.length > 0) {
+<section class="home-gallery scroll-reveal" #scrollReveal aria-label="Featured photography">
+  <header class="home-gallery__head">
+    <p class="home-gallery__eyebrow">Selected work</p>
+    <div class="home-gallery__rule" aria-hidden="true"></div>
+  </header>
+  <div class="portfolio-grid">
+    @for (image of images; track image._id; let i = $index) {
+    <div class="grid-item" [style.--delay]="(i % 8) * 0.1 + 's'" (click)="openLightbox(i)">
+      <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)"
+        sizes="(max-width: 768px) 100vw, 50vw" [alt]="image.originalName" loading="lazy" />
+      @if (authService.isLoggedIn) {
+      <button type="button" class="delete-btn" (click)="askDelete(image); $event.stopPropagation()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </button>
+      }
+    </div>
+    }
+  </div>
+</section>
+}
+
+@if (!loading) {
+<section class="story-intro scroll-reveal" #scrollReveal aria-labelledby="story-heading">
+  <div class="story-intro__aura" aria-hidden="true"></div>
+  <div class="story-intro__wrap">
+    <div class="story-intro__photo-block">
+      <div class="story-intro__photo-ring" aria-hidden="true"></div>
+      <div class="story-intro__photo-cut">
+        <img src="/bakr.png" width="560" height="700" alt="Portrait of Abo Bakr, photographer" loading="lazy"
+          decoding="async" />
+      </div>
+      <span class="story-intro__stamp">Since 2015</span>
+    </div>
+
+    <header class="story-intro__header">
+      <p class="story-intro__kicker">Behind the lens</p>
+      <h2 id="story-heading" class="story-intro__title">
+        <span class="story-intro__title-row">Hello —</span>
+        <span class="story-intro__title-row story-intro__title-row--strong">I’m Abo Bakr</span>
+      </h2>
+    </header>
+
+    <div class="story-intro__copy">
+      <p>
+        I’ve been a wedding photographer since 2015. Before that, I explored and captured everything around me,
+        shaping the way I see moments today.
+      </p>
+      <blockquote class="story-intro__pull">
+        <p>I don’t just aim for beautiful images—I aim for honest ones.</p>
+      </blockquote>
+      <p>
+        I focus on creating a relaxed, comfortable atmosphere, because when couples feel at ease, the emotions become
+        real… and that’s where the magic happens.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="home-manifesto scroll-reveal" #scrollReveal aria-labelledby="manifesto-heading">
+  <div class="home-manifesto__canvas" aria-hidden="true"></div>
+  <div class="home-manifesto__glyph" aria-hidden="true"></div>
+
+  <div class="home-manifesto__inner">
+    <h2 id="manifesto-heading" class="home-manifesto__sr-heading">Why photographs matter</h2>
+
+    <p class="home-manifesto__eyebrow">Timeless moments</p>
+
+    <div class="home-manifesto__body">
+      <div class="home-manifesto__stanza">
+        <p>
+          Photography, for me, is more than just taking pictures — it’s about preserving emotions, memories, and the
+          little moments that often go unnoticed.
+        </p>
+        <p>
+          Every wedding tells a unique story, and my passion is capturing those genuine connections, quiet glances,
+          joyful tears, and unforgettable celebrations that make your day truly yours.
+        </p>
+      </div>
+
+      <div class="home-manifesto__divider" aria-hidden="true"></div>
+
+      <div class="home-manifesto__stanza">
+        <p>
+          Years from now, when the flowers have faded and the trends have changed, your photographs will remain.
+        </p>
+        <p class="home-manifesto__emphasis">
+          They’ll bring you back to the laughter, the love, and every feeling you experienced on one of the most
+          meaningful days of your life.
+        </p>
+      </div>
+
+      <div class="home-manifesto__divider home-manifesto__divider--soft" aria-hidden="true"></div>
+
+      <p class="home-manifesto__closing">
+        My goal is to create timeless images that feel natural, emotional, and deeply personal — photographs that allow
+        you to relive your story again and again.
+      </p>
+    </div>
+
+    <a class="home-manifesto__instagram" [href]="instagramUrl" target="_blank" rel="noopener noreferrer"
+      [attr.aria-label]="'Open Instagram profile'">
+      Instagram — &#64;ABOBAKR_WEDDINGS
+    </a>
+  </div>
+</section>
+}
+
+<!-- Admin FAB upload button -->
+@if (authService.isLoggedIn && !uploadState.visible) {
+<button class="fab-upload" (click)="openFileDialog()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+</button>
+}
+
+<app-image-lightbox [visible]="lightboxOpen" [slides]="lightboxSlides" [startIndex]="lightboxStart"
+  (closed)="closeLightbox()" />
+
+<!-- Delete confirmation dialog -->
+<app-confirm-dialog [visible]="showDeleteDialog" title="Delete Image"
+  message="Are you sure you want to delete this image? This action cannot be undone." confirmText="Delete"
+  cancelText="Cancel" (confirmed)="confirmDelete()" (cancelled)="cancelDelete()" />

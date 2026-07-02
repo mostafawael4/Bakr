@@ -1,0 +1,644 @@
+/* ── Loading ── */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  color: var(--color-nav);
+  font-size: 0.9rem;
+
+  &.inline {
+    min-height: auto;
+    padding: 3rem 0;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-interactive);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+/* ── Hero ── */
+.event-hero {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background-color: var(--color-page);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+
+  &.editing-focal {
+    cursor: crosshair;
+  }
+}
+
+.hero-focal-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  backdrop-filter: blur(6px);
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.62);
+  }
+}
+
+.hero-focal-marker {
+  position: absolute;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background-color: var(--color-interactive);
+  }
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(42, 37, 32, 0.7) 0%, rgba(42, 37, 32, 0.2) 50%, transparent 100%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem 1.5rem 2.5rem;
+}
+
+.hero-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.6rem;
+}
+
+.hero-names {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 300;
+  font-style: italic;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+
+  span {
+    font-style: normal;
+    opacity: 0.7;
+  }
+}
+
+/* ── Content Section ── */
+.content-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--color-heading);
+    margin: 0;
+  }
+}
+
+.folder-title {
+  font-family: var(--font-display);
+  font-style: italic;
+}
+
+.image-count {
+  font-size: 0.8rem;
+  color: var(--color-nav);
+  margin-left: auto;
+}
+
+/* ── Download All Button ── */
+.btn-download-all {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-heading);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+    border-color: var(--color-interactive);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(42, 37, 32, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  color: var(--color-nav);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.4rem 0;
+  transition: color 0.2s;
+  font-family: inherit;
+
+  &:hover {
+    color: var(--color-heading);
+  }
+}
+
+.btn-add-folder {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: inherit;
+
+  &:hover {
+    background-color: var(--color-interactive-hover);
+  }
+}
+
+/* ── Folder Input Row ── */
+.folder-input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  align-items: stretch;
+  animation: slideDown 0.3s ease;
+}
+
+.folder-name-input {
+  flex: 1;
+  background-color: var(--color-page);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  color: var(--color-heading);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: var(--color-interactive);
+  }
+
+  &::placeholder {
+    color: var(--color-caption);
+  }
+}
+
+.btn-create-folder {
+  padding: 0 1.2rem;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--color-interactive-hover);
+  }
+}
+
+.btn-cancel-folder {
+  padding: 0 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-nav);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    border-color: var(--color-interactive);
+    color: var(--color-heading);
+  }
+}
+
+/* ── Folders Grid ── */
+.folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.folder-card {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: transform 0.3s, box-shadow 0.3s;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(42, 37, 32, 0.08);
+  }
+
+  &:hover .folder-cover img {
+    transform: scale(1.04);
+  }
+
+  &:hover .folder-delete-btn {
+    opacity: 1;
+  }
+}
+
+.folder-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: var(--color-page);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+    transition: transform 0.6s ease;
+  }
+}
+
+.folder-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-border);
+  background: linear-gradient(135deg, var(--color-page) 0%, #e0ddd7 100%);
+}
+
+.folder-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(42, 37, 32, 0.3) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.folder-count {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.06em;
+}
+
+.folder-delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    background-color: #dc2626;
+    color: #fff;
+  }
+}
+
+.folder-info {
+  padding: 1rem 1.25rem;
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--color-heading);
+    margin: 0;
+  }
+}
+
+/* ── Empty State ── */
+.empty-folders {
+  text-align: center;
+  padding: 4rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-border);
+
+  p {
+    color: var(--color-heading);
+    font-size: 1rem;
+    font-weight: 300;
+  }
+
+  span {
+    color: var(--color-nav);
+    font-size: 0.8rem;
+  }
+}
+
+/* ── Images Grid (Masonry) ── */
+.images-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  .masonry-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .image-item {
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    background-color: var(--color-page);
+    min-height: 100px;
+
+    &.is-cover {
+      outline: 2px solid var(--color-interactive);
+      outline-offset: 2px;
+    }
+
+    &:hover img {
+      transform: scale(1.03);
+    }
+
+    &:hover .img-delete-btn,
+    &:hover .img-cover-btn,
+    &:hover .img-download-btn {
+      opacity: 1;
+    }
+
+    img {
+      width: 100%;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+  }
+}
+
+.img-cover-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--color-nav);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &.is-active {
+    opacity: 1;
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+  }
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+  }
+}
+
+.img-delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    background-color: #dc2626;
+    color: #fff;
+  }
+}
+
+.img-download-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--color-interactive);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+  }
+}
+
+/* ── FAB ── */
+.fab-upload {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(42, 37, 32, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.2s;
+
+  &:hover {
+    background-color: var(--color-interactive-hover);
+    transform: scale(1.08);
+  }
+}
+
+/* ── Animations ── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {}
+
+@media (max-width: 768px) {
+  .event-hero {
+    height: 240px;
+  }
+
+  .images-grid {
+    gap: 0.75rem;
+
+    .masonry-column {
+      gap: 0.75rem;
+    }
+  }
+
+  .folders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .folder-delete-btn {
+    opacity: 1;
+  }
+
+  .img-delete-btn {
+    opacity: 1;
+  }
+
+  .img-cover-btn {
+    opacity: 1;
+  }
+
+  .img-download-btn {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-section {
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .folders-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .folder-input-row {
+    flex-direction: column;
+  }
+}

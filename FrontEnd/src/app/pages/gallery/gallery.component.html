@@ -1,0 +1,106 @@
+<section class="gallery-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Gallery</h1>
+    <p class="subtitle">Explore our curated collections of beautiful moments.</p>
+  </div>
+
+  <!-- Admin: Create Collection Button -->
+  @if (authService.isLoggedIn) {
+    <div class="admin-actions">
+      <button class="btn-add" (click)="openCreate()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Collection
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading && collections.length === 0) {
+    <div class="empty-state">
+      <p>No collections yet.</p>
+    </div>
+  }
+
+  <!-- Collections Grid -->
+  @if (!loading && collections.length > 0) {
+    <div class="collections-grid" [class.single]="collections.length === 1">
+      @for (collection of collections; track collection._id; let i = $index; let isLast = $last) {
+        <a
+          class="collection-card"
+          #cardItem
+          [class.odd-last]="isLast && collections.length % 2 === 1"
+          [routerLink]="['/gallery', collection._id]"
+          [style.--delay]="(i % 6) * 0.12 + 's'"
+        >
+          <!-- Image -->
+          <div class="card-image">
+            @if (collection.coverImage) {
+              <img [src]="getCoverUrl(collection.coverImage)" [alt]="collection.name" />
+            } @else {
+              <div class="card-image-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+            }
+
+            <!-- Admin Controls -->
+            @if (authService.isLoggedIn) {
+              <div class="card-admin">
+                <button class="btn-edit" (click)="openEdit(collection, $event)" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="btn-delete" (click)="askDelete(collection, $event)" title="Delete">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Text -->
+          <div class="card-info">
+            <span class="card-label">View Collection</span>
+            <h2 class="card-name">{{ collection.name }}</h2>
+            @if (collection.eventCount) {
+              <p class="card-count">{{ collection.eventCount }} event{{ collection.eventCount > 1 ? 's' : '' }}</p>
+            }
+          </div>
+        </a>
+      }
+    </div>
+  }
+</section>
+
+<!-- Collection Modal -->
+<app-gallery-event-modal
+  [visible]="showModal"
+  [editEvent]="editTarget"
+  mode="collection"
+  (closed)="onModalClosed()"
+  (saved)="onModalSaved($event)"
+/>
+
+<!-- Delete Confirmation -->
+<app-confirm-dialog
+  [visible]="showDeleteDialog"
+  title="Delete Collection"
+  [message]="'Delete \'' + (deleteTarget?.name || '') + '\' and all its events and photos? This cannot be undone.'"
+  confirmText="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>

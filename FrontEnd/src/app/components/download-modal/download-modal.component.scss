@@ -1,0 +1,161 @@
+.dl-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(42, 37, 32, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: dlFadeIn 0.25s ease;
+  padding: 1rem;
+}
+
+.dl-modal {
+  width: 100%;
+  max-width: 380px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  animation: dlSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 24px 64px rgba(42, 37, 32, 0.2);
+}
+
+/* ── Header ── */
+.dl-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.dl-spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-interactive);
+  animation: dlSpin 0.8s linear infinite;
+}
+
+.dl-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--success {
+    background-color: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+  }
+
+  &--error {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+}
+
+/* ── Title ── */
+.dl-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 300;
+  color: var(--color-heading);
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.03em;
+}
+
+.dl-folder {
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--color-nav);
+  margin: 0 0 1.5rem;
+  font-style: italic;
+}
+
+/* ── Progress ── */
+.dl-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--color-page);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.dl-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-interactive), #6b5d4f);
+  transition: width 0.3s ease;
+}
+
+.dl-status {
+  font-size: 0.8rem;
+  color: var(--color-nav);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dl-percent {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  color: var(--color-interactive);
+  font-weight: 400;
+}
+
+/* ── Error ── */
+.dl-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin: 0.5rem 0 1rem;
+}
+
+/* ── Close button ── */
+.dl-close-btn {
+  margin-top: 1rem;
+  padding: 0.65rem 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-heading);
+  font-size: 0.85rem;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--color-interactive);
+    color: var(--color-surface);
+    border-color: var(--color-interactive);
+  }
+}
+
+/* ── Animations ── */
+@keyframes dlFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dlSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dlSpin {
+  to { transform: rotate(360deg); }
+}
