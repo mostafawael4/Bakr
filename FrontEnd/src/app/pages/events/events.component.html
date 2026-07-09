@@ -138,6 +138,7 @@
 <app-client-event-modal
   [visible]="showModal"
   [editEvent]="editTarget"
+  [loading]="isSaving"
   (closed)="onModalClosed()"
   (saved)="onModalSaved($event)"
 />

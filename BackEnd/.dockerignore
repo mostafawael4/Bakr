@@ -1,8 +1,9 @@
 node_modules
-npm-debug.log
+uploads
 logs
 tmp
 .git
 .gitignore
 .DS_Store
 .env
+npm-debug.log

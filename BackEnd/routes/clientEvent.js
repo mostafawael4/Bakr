@@ -94,11 +94,12 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
         const imageCount = await ClientEventImage.countDocuments({ eventId: ev._id });
         const folders = await ClientEventImage.distinct('folderKey', { eventId: ev._id });
         
+        const backgroundImageKey = ev.backgroundImage || null;
         if (ev.backgroundImage) {
           ev.backgroundImage = await getPresignedDownloadUrl(ev.backgroundImage);
         }
 
-        return { ...ev, imageCount, folderCount: folders.length };
+        return { ...ev, backgroundImageKey, imageCount, folderCount: folders.length };
       })
     );
 

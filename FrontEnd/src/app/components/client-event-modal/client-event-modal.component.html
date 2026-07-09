@@ -3,23 +3,34 @@
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ isEdit ? 'Edit' : 'Create' }} Event</h2>
-        <button class="close-btn" (click)="close()">
+        <button class="close-btn" (click)="close()" [disabled]="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
 
-      <form (ngSubmit)="submit()" class="modal-form">
+      @if (loading) {
+        <div class="modal-loading-overlay">
+          <div class="creative-spinner"></div>
+          <p>{{ isEdit ? 'Updating Event...' : 'Creating Event...' }}</p>
+        </div>
+      }
+
+      <form (ngSubmit)="submit()" class="modal-form" autocomplete="off">
         <!-- Bride & Groom Names -->
         <div class="form-row">
           <div class="form-group">
             <label for="brideName">Bride Name</label>
-            <input id="brideName" type="text" [(ngModel)]="brideName" name="brideName" placeholder="e.g. Sara" required />
+            <input id="brideName" type="text" [(ngModel)]="brideName" name="brideName" placeholder="e.g. Sara" required minlength="3" autocomplete="off" data-lpignore="true" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!brideName.trim() || brideName.trim().length < 3)" />
+            @if (hasAttemptedSubmit && !brideName.trim()) { <span class="error-text">Required field</span> }
+            @else if (hasAttemptedSubmit && brideName.trim().length < 3) { <span class="error-text">Min 3 characters</span> }
           </div>
           <div class="form-group">
             <label for="groomName">Groom Name</label>
-            <input id="groomName" type="text" [(ngModel)]="groomName" name="groomName" placeholder="e.g. Ahmed" required />
+            <input id="groomName" type="text" [(ngModel)]="groomName" name="groomName" placeholder="e.g. Ahmed" required minlength="3" autocomplete="off" data-lpignore="true" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!groomName.trim() || groomName.trim().length < 3)" />
+            @if (hasAttemptedSubmit && !groomName.trim()) { <span class="error-text">Required field</span> }
+            @else if (hasAttemptedSubmit && groomName.trim().length < 3) { <span class="error-text">Min 3 characters</span> }
           </div>
         </div>
 
@@ -35,8 +46,12 @@
                 name="password"
                 placeholder="Enter password"
                 required
+                autocomplete="new-password"
+                data-lpignore="true"
+                [disabled]="loading"
+                [class.is-invalid]="hasAttemptedSubmit && !password.trim()"
               />
-              <button type="button" class="toggle-pw" (click)="togglePassword()">
+              <button type="button" class="toggle-pw" (click)="togglePassword()" [disabled]="loading">
                 @if (showPassword) {
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
@@ -49,7 +64,7 @@
                 }
               </button>
             </div>
-            <button type="button" class="btn-generate" (click)="generatePassword()">
+            <button type="button" class="btn-generate" (click)="generatePassword()" [disabled]="loading">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                 <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -57,13 +72,14 @@
               Generate
             </button>
           </div>
+          @if (hasAttemptedSubmit && !password.trim()) { <span class="error-text" style="margin-top: 0.2rem;">Password is required</span> }
         </div>
 
         <!-- Background Image -->
         <div class="form-group">
           <label>Background Image</label>
           @if (!backgroundPreview) {
-            <div class="cover-upload" (click)="openBackgroundPicker(bgInput)">
+            <div class="cover-upload" (click)="!loading && openBackgroundPicker(bgInput)" [style.opacity]="loading ? '0.6' : '1'" [style.cursor]="loading ? 'default' : 'pointer'">
               <div class="cover-placeholder">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
@@ -72,31 +88,29 @@
               </div>
             </div>
           } @else {
-            <div class="focal-frame" (click)="setHeroFocal($event)">
+            <div class="focal-frame">
               <img
                 [src]="backgroundPreview"
                 alt="Background preview"
                 class="focal-preview"
-                [style.object-position]="heroFocalPosition"
               />
-              <span
-                class="focal-marker"
-                [style.left.%]="heroFocalX"
-                [style.top.%]="heroFocalY"
-                aria-hidden="true"
-              ></span>
-              <button type="button" class="cover-change" (click)="openBackgroundPicker(bgInput); $event.stopPropagation()">
+              <button type="button" class="cover-change" (click)="openBackgroundPicker(bgInput)" [disabled]="loading">
                 Change
               </button>
             </div>
-            <p class="focal-hint">Click the preview to set the hero center point</p>
           }
-          <input #bgInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onBackgroundSelected($event)" />
+          <input #bgInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onBackgroundSelected($event)" [disabled]="loading" />
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" (click)="close()">Cancel</button>
-          <button type="submit" class="btn-save">{{ isEdit ? 'Update' : 'Create' }}</button>
+          <button type="button" class="btn-cancel" (click)="close()" [disabled]="loading">Cancel</button>
+          <button type="submit" class="btn-save" [disabled]="loading">
+            @if (loading) {
+              {{ isEdit ? 'Updating...' : 'Creating...' }}
+            } @else {
+              {{ isEdit ? 'Update' : 'Create' }}
+            }
+          </button>
         </div>
       </form>
     </div>

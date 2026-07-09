@@ -23,6 +23,7 @@ export class EventsComponent implements OnInit {
 
   events: ClientEvent[] = [];
   loading = true;
+  isSaving = false;
 
   showModal = false;
   editTarget: ClientEvent | null = null;
@@ -66,6 +67,7 @@ export class EventsComponent implements OnInit {
   }
 
   async onModalSaved(formData: FormData): Promise<void> {
+    this.isSaving = true;
     const brideName = formData.get('brideName') as string;
     const groomName = formData.get('groomName') as string;
     const password = formData.get('password') as string;
@@ -73,7 +75,7 @@ export class EventsComponent implements OnInit {
     const heroFocalY = Number(formData.get('heroFocalY'));
     const backgroundFile = formData.get('background') as File;
 
-    let backgroundImageKey: string | null = this.editTarget ? (this.editTarget.backgroundImage ? this.editTarget.backgroundImage : null) : null;
+    let backgroundImageKey: string | null = this.editTarget ? (this.editTarget.backgroundImageKey || null) : null;
 
     if (backgroundFile) {
       try {
@@ -81,6 +83,7 @@ export class EventsComponent implements OnInit {
         backgroundImageKey = result.url;
       } catch (err) {
         console.error('Failed to upload background image to B2:', err);
+        this.isSaving = false;
         return;
       }
     }
@@ -100,14 +103,22 @@ export class EventsComponent implements OnInit {
           this.showModal = false;
           this.editTarget = null;
           this.fetchEvents();
+          this.isSaving = false;
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     } else {
       this.clientEventService.createEvent(payload).subscribe({
         next: () => {
           this.showModal = false;
           this.fetchEvents();
+          this.isSaving = false;
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     }
   }
