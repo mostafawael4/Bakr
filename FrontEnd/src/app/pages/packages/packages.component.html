@@ -123,6 +123,7 @@
 <app-package-modal
   [visible]="showModal"
   [editPackage]="editTarget"
+  [loading]="isSaving"
   (closed)="onModalClosed()"
   (saved)="onModalSaved($event)"
 />
@@ -130,6 +131,7 @@
 <!-- Delete Confirmation -->
 <app-confirm-dialog
   [visible]="showDeleteDialog"
+  [loading]="isDeleting"
   title="Delete Package"
   [message]="'Are you sure you want to delete \'' + (deleteTarget?.name || '') + '\'? This action cannot be undone.'"
   confirmText="Delete"

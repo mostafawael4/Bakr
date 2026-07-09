@@ -39,6 +39,7 @@ export class FeedbacksComponent implements OnInit, AfterViewInit, OnDestroy {
   // Delete
   deleteTarget: Feedback | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   Math = Math;
 
@@ -181,15 +182,18 @@ export class FeedbacksComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.feedbackService.delete(this.deleteTarget._id).subscribe({
       next: () => {
         this.feedbacks = this.feedbacks.filter(f => f._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpEvent } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -43,12 +43,12 @@ export class GalleryService {
     return this.http.get<{ ok: boolean; collections: GalleryCollection[] }>(this.url);
   }
 
-  createCollection(formData: FormData): Observable<{ ok: boolean; collection: GalleryCollection }> {
-    return this.http.post<{ ok: boolean; collection: GalleryCollection }>(this.url, formData, { withCredentials: true });
+  createCollection(payload: { name: string; coverImage: string | null }): Observable<{ ok: boolean; collection: GalleryCollection }> {
+    return this.http.post<{ ok: boolean; collection: GalleryCollection }>(this.url, payload, { withCredentials: true });
   }
 
-  updateCollection(id: string, formData: FormData): Observable<{ ok: boolean; collection: GalleryCollection }> {
-    return this.http.put<{ ok: boolean; collection: GalleryCollection }>(`${this.url}/${id}`, formData, { withCredentials: true });
+  updateCollection(id: string, payload: { name?: string; coverImage?: string | null }): Observable<{ ok: boolean; collection: GalleryCollection }> {
+    return this.http.put<{ ok: boolean; collection: GalleryCollection }>(`${this.url}/${id}`, payload, { withCredentials: true });
   }
 
   deleteCollection(id: string): Observable<{ ok: boolean; message: string }> {
@@ -61,8 +61,8 @@ export class GalleryService {
     return this.http.get<{ ok: boolean; collection: GalleryCollection; events: GalleryEvent[] }>(`${this.url}/${collectionId}/events`);
   }
 
-  createEvent(collectionId: string, formData: FormData): Observable<{ ok: boolean; event: GalleryEvent }> {
-    return this.http.post<{ ok: boolean; event: GalleryEvent }>(`${this.url}/${collectionId}/events`, formData, { withCredentials: true });
+  createEvent(collectionId: string, payload: { name: string; coverImage: string | null }): Observable<{ ok: boolean; event: GalleryEvent }> {
+    return this.http.post<{ ok: boolean; event: GalleryEvent }>(`${this.url}/${collectionId}/events`, payload, { withCredentials: true });
   }
 
   /* ── Single Event ── */
@@ -71,8 +71,8 @@ export class GalleryService {
     return this.http.get<{ ok: boolean; event: GalleryEvent; images: GalleryImage[] }>(`${this.url}/events/${id}`);
   }
 
-  updateEvent(id: string, formData: FormData): Observable<{ ok: boolean; event: GalleryEvent }> {
-    return this.http.put<{ ok: boolean; event: GalleryEvent }>(`${this.url}/events/${id}`, formData, { withCredentials: true });
+  updateEvent(id: string, payload: { name?: string; coverImage?: string | null }): Observable<{ ok: boolean; event: GalleryEvent }> {
+    return this.http.put<{ ok: boolean; event: GalleryEvent }>(`${this.url}/events/${id}`, payload, { withCredentials: true });
   }
 
   deleteEvent(id: string): Observable<{ ok: boolean; message: string }> {
@@ -81,11 +81,9 @@ export class GalleryService {
 
   /* ── Images ── */
 
-  uploadImages(eventId: string, formData: FormData): Observable<HttpEvent<{ ok: boolean; images: GalleryImage[] }>> {
-    return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/events/${eventId}/images`, formData, { 
-      withCredentials: true,
-      reportProgress: true,
-      observe: 'events'
+  uploadImages(eventId: string, images: any[]): Observable<{ ok: boolean; images: GalleryImage[] }> {
+    return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/events/${eventId}/images`, { images }, { 
+      withCredentials: true
     });
   }
 

@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { GalleryService, GalleryEvent, GalleryImage } from '../../services/gallery.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { B2UploadService } from '../../services/b2-upload.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
 import { environment } from '../../../environments/environment';
@@ -23,6 +24,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
   private platformId = inject(PLATFORM_ID);
   private galleryService = inject(GalleryService);
   private wsService = inject(WebSocketService);
+  private b2UploadService = inject(B2UploadService);
   authService = inject(AuthService);
 
   @ViewChildren('gridItem') gridItems!: QueryList<ElementRef>;
@@ -53,6 +55,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   deleteTarget: GalleryImage | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   lightboxOpen = false;
   lightboxStart = 0;
@@ -234,63 +237,96 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     this.fileInput.nativeElement.click();
   }
 
-  onFilesSelected(event: Event): void {
+  async onFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
+    const fileList = Array.from(input.files);
     let totalSize = 0;
-    for (let i = 0; i < input.files.length; i++) {
-      totalSize += input.files[i].size;
+    for (const file of fileList) {
+      totalSize += file.size;
     }
 
     this.uploadState = {
       visible: true,
-      totalFiles: input.files.length,
+      totalFiles: fileList.length,
       totalSize,
       currentFile: 0,
       percent: 0,
-      statusLabel: 'Uploading...',
+      statusLabel: 'Preparing upload...',
       done: false,
       successCount: 0,
       failCount: 0,
     };
 
-    this.fileProcessingScores = {};
+    const uploadedImages: any[] = [];
+    let completedCount = 0;
 
-    const formData = new FormData();
-    for (let i = 0; i < input.files.length; i++) {
-      formData.append('images', input.files[i]);
-    }
+    const progressSub = this.b2UploadService.progress$.subscribe((p) => {
+      const currentFileIndex = fileList.findIndex((f) => f.name === p.filename);
+      if (currentFileIndex !== -1) {
+        const fileWeight = 100 / fileList.length;
+        const totalCompletedWeight = completedCount * fileWeight;
+        const currentFileWeight = (p.percent / 100) * fileWeight;
+        const overallPercent = Math.round(totalCompletedWeight + currentFileWeight);
 
-    this.galleryService.uploadImages(this.eventId, formData).subscribe({
-      next: (event: HttpEvent<any>) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          if (event.total) {
-            const networkPercent = Math.round((100 * event.loaded) / event.total);
-            this.uploadState = {
-              ...this.uploadState,
-              percent: Math.round(networkPercent * 0.4),
-              statusLabel: `Uploading to server... ${networkPercent}%`,
-            };
-          }
-        } else if (event.type === HttpEventType.Response) {
-          input.value = '';
-          this.uploadState = {
-            ...this.uploadState,
-            statusLabel: 'Server processing started...',
-            percent: 40
-          };
-        }
-      },
-      error: () => {
         this.uploadState = {
           ...this.uploadState,
-          failCount: this.uploadState.totalFiles - this.uploadState.successCount,
-          done: true,
+          percent: Math.min(99, overallPercent),
+          currentFile: completedCount + 1,
+          statusLabel: `Uploading ${p.filename} (${p.step})... ${p.percent}%`,
         };
-        input.value = '';
-      },
+      }
     });
+
+    for (const file of fileList) {
+      try {
+        const result = await this.b2UploadService.uploadImage(file, `gallery/${this.eventId}`);
+        uploadedImages.push(result);
+        completedCount++;
+        this.uploadState.successCount++;
+      } catch (err) {
+        this.uploadState.failCount++;
+        completedCount++;
+      }
+    }
+
+    progressSub.unsubscribe();
+
+    if (uploadedImages.length > 0) {
+      this.uploadState = {
+        ...this.uploadState,
+        percent: 99,
+        statusLabel: 'Saving details to database...',
+      };
+
+      this.galleryService.uploadImages(this.eventId, uploadedImages).subscribe({
+        next: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            percent: 100,
+            statusLabel: `Completed successfully (${this.uploadState.successCount}/${fileList.length})`,
+          };
+          input.value = '';
+        },
+        error: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            statusLabel: 'Failed to save upload info to database',
+          };
+          input.value = '';
+        },
+      });
+    } else {
+      this.uploadState = {
+        ...this.uploadState,
+        done: true,
+        statusLabel: 'All uploads failed',
+      };
+      input.value = '';
+    }
   }
 
   onUploadDismissed(): void {
@@ -306,6 +342,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     const imageId = this.deleteTarget._id;
+    this.isDeleting = true;
 
     this.galleryService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
@@ -314,10 +351,12 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
         this.rebuildMasonry();
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

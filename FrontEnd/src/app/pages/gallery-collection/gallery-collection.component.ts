@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { GalleryService, GalleryCollection, GalleryEvent } from '../../services/gallery.service';
 import { GalleryEventModalComponent } from '../../components/gallery-event-modal/gallery-event-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { B2UploadService } from '../../services/b2-upload.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -19,6 +20,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
   authService = inject(AuthService);
   private route = inject(ActivatedRoute);
   private galleryService = inject(GalleryService);
+  private b2UploadService = inject(B2UploadService);
   private platformId = inject(PLATFORM_ID);
 
   @ViewChildren('cardItem') cardItems!: QueryList<ElementRef>;
@@ -30,9 +32,11 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
 
   showModal = false;
   editTarget: GalleryEvent | null = null;
+  isSaving = false;
 
   deleteTarget: GalleryEvent | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   private observer: IntersectionObserver | null = null;
   private cardSub: Subscription | null = null;
@@ -131,21 +135,46 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     this.editTarget = null;
   }
 
-  onModalSaved(formData: FormData): void {
+  async onModalSaved(formData: FormData): Promise<void> {
+    this.isSaving = true;
+    const name = formData.get('name') as string;
+    const coverFile = formData.get('cover') as File;
+
+    let coverImageKey: string | null = this.editTarget ? (this.editTarget.coverImage ? this.editTarget.coverImage : null) : null;
+
+    if (coverFile) {
+      try {
+        const result = await this.b2UploadService.uploadImage(coverFile, `gallery/${this.collectionId}`);
+        coverImageKey = result.thumbnail || result.medium || result.url;
+      } catch (err) {
+        console.error('Failed to upload event cover image to B2:', err);
+        this.isSaving = false;
+        return;
+      }
+    }
+
     if (this.editTarget) {
-      this.galleryService.updateEvent(this.editTarget._id, formData).subscribe({
+      this.galleryService.updateEvent(this.editTarget._id, { name, coverImage: coverImageKey }).subscribe({
         next: () => {
           this.showModal = false;
           this.editTarget = null;
+          this.isSaving = false;
           this.fetchEvents();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     } else {
-      this.galleryService.createEvent(this.collectionId, formData).subscribe({
+      this.galleryService.createEvent(this.collectionId, { name, coverImage: coverImageKey }).subscribe({
         next: () => {
           this.showModal = false;
+          this.isSaving = false;
           this.fetchEvents();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     }
   }
@@ -159,15 +188,18 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.galleryService.deleteEvent(this.deleteTarget._id).subscribe({
       next: () => {
         this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

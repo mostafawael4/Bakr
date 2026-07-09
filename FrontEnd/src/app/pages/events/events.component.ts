@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { ClientEventService, ClientEvent } from '../../services/client-event.service';
 import { ClientEventModalComponent } from '../../components/client-event-modal/client-event-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { B2UploadService } from '../../services/b2-upload.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -17,16 +18,19 @@ import { environment } from '../../../environments/environment';
 export class EventsComponent implements OnInit {
   authService = inject(AuthService);
   private clientEventService = inject(ClientEventService);
+  private b2UploadService = inject(B2UploadService);
   private router = inject(Router);
 
   events: ClientEvent[] = [];
   loading = true;
+  isSaving = false;
 
   showModal = false;
   editTarget: ClientEvent | null = null;
 
   deleteTarget: ClientEvent | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   copiedId: string | null = null;
 
@@ -63,21 +67,59 @@ export class EventsComponent implements OnInit {
     this.editTarget = null;
   }
 
-  onModalSaved(formData: FormData): void {
+  async onModalSaved(formData: FormData): Promise<void> {
+    this.isSaving = true;
+    const brideName = formData.get('brideName') as string;
+    const groomName = formData.get('groomName') as string;
+    const password = formData.get('password') as string;
+    const heroFocalX = Number(formData.get('heroFocalX'));
+    const heroFocalY = Number(formData.get('heroFocalY'));
+    const backgroundFile = formData.get('background') as File;
+
+    let backgroundImageKey: string | null = this.editTarget ? (this.editTarget.backgroundImageKey || null) : null;
+
+    if (backgroundFile) {
+      try {
+        const result = await this.b2UploadService.uploadImage(backgroundFile, 'client-events');
+        backgroundImageKey = result.hero || result.medium || result.url;
+      } catch (err) {
+        console.error('Failed to upload background image to B2:', err);
+        this.isSaving = false;
+        return;
+      }
+    }
+
+    const payload = {
+      brideName,
+      groomName,
+      password,
+      heroFocalX,
+      heroFocalY,
+      backgroundImage: backgroundImageKey,
+    };
+
     if (this.editTarget) {
-      this.clientEventService.updateEvent(this.editTarget._id, formData).subscribe({
+      this.clientEventService.updateEvent(this.editTarget._id, payload).subscribe({
         next: () => {
           this.showModal = false;
           this.editTarget = null;
           this.fetchEvents();
+          this.isSaving = false;
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     } else {
-      this.clientEventService.createEvent(formData).subscribe({
+      this.clientEventService.createEvent(payload).subscribe({
         next: () => {
           this.showModal = false;
           this.fetchEvents();
+          this.isSaving = false;
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     }
   }
@@ -90,15 +132,18 @@ export class EventsComponent implements OnInit {
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.clientEventService.deleteEvent(this.deleteTarget._id).subscribe({
       next: () => {
         this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

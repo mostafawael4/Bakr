@@ -14,6 +14,7 @@ import { environment } from '../../../environments/environment';
 export class ClientEventModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() editEvent: ClientEvent | null = null;
+  @Input() loading = false;
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<FormData>();
 
@@ -25,6 +26,7 @@ export class ClientEventModalComponent implements OnChanges {
   heroFocalX = 50;
   heroFocalY = 50;
   showPassword = false;
+  hasAttemptedSubmit = false;
 
   get isEdit(): boolean {
     return this.editEvent !== null;
@@ -35,6 +37,7 @@ export class ClientEventModalComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
+    this.hasAttemptedSubmit = false;
     if (this.editEvent) {
       this.brideName = this.editEvent.brideName;
       this.groomName = this.editEvent.groomName;
@@ -86,7 +89,13 @@ export class ClientEventModalComponent implements OnChanges {
   }
 
   submit(): void {
-    if (!this.brideName.trim() || !this.groomName.trim() || !this.password.trim()) return;
+    this.hasAttemptedSubmit = true;
+    
+    if (!this.brideName.trim() || this.brideName.trim().length < 3 || 
+        !this.groomName.trim() || this.groomName.trim().length < 3 || 
+        !this.password.trim()) {
+      return;
+    }
 
     const formData = new FormData();
     formData.append('brideName', this.brideName.trim());
@@ -110,6 +119,7 @@ export class ClientEventModalComponent implements OnChanges {
     this.heroFocalX = 50;
     this.heroFocalY = 50;
     this.showPassword = false;
+    this.hasAttemptedSubmit = false;
   }
 
   private toFullUrl(path: string | null): string | null {

@@ -9,6 +9,8 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1078.0",
+    "@aws-sdk/s3-request-presigner": "^3.1078.0",
     "bcrypt": "^6.0.0",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",

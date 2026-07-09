@@ -13,8 +13,11 @@ import { Package } from '../../services/package.service';
 export class PackageModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() editPackage: Package | null = null;
+  @Input() loading = false;
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<Partial<Package>>();
+
+  hasAttemptedSubmit = false;
 
   form = {
     name: '',
@@ -32,6 +35,7 @@ export class PackageModalComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
+    this.hasAttemptedSubmit = false;
     if (this.editPackage) {
       this.form = {
         name: this.editPackage.name,
@@ -53,7 +57,14 @@ export class PackageModalComponent implements OnChanges {
   }
 
   submit(): void {
-    if (!this.form.name || !this.form.hours || !this.form.price) return;
+    this.hasAttemptedSubmit = true;
+
+    if (!this.form.name.trim() || this.form.name.trim().length < 3 ||
+        !this.form.hours || this.form.hours < 1 ||
+        this.form.price == null || this.form.price < 0) {
+      return;
+    }
+
     this.saved.emit({ ...this.form });
   }
 
@@ -68,5 +79,6 @@ export class PackageModalComponent implements OnChanges {
       includesMainPhotographer: true,
       order: 0,
     };
+    this.hasAttemptedSubmit = false;
   }
 }

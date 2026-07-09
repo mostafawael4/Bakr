@@ -22,6 +22,8 @@
   overflow-y: auto;
   animation: scaleIn 0.25s ease;
   box-shadow: 0 20px 50px rgba(42, 37, 32, 0.12);
+  position: relative;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -86,6 +88,10 @@
     outline: none;
     width: 100%;
 
+    &.is-invalid {
+      border-color: #e57373 !important;
+    }
+
     &:focus {
       border-color: var(--color-interactive);
     }
@@ -98,6 +104,13 @@
   textarea {
     resize: vertical;
     min-height: 70px;
+  }
+
+  .error-text {
+    color: #e57373;
+    font-size: 0.75rem;
+    margin-top: -0.2rem;
+    margin-bottom: 0.2rem;
   }
 }
 
@@ -185,4 +198,39 @@
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.modal-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(247, 245, 241, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  gap: 1rem;
+
+  .creative-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-interactive);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    color: var(--color-heading);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

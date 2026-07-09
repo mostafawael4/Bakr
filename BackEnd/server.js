@@ -31,6 +31,7 @@ const sessionConfig = {
   saveUninitialized: false,
   cookie: {
     secure: Credentials.NODE_ENV === 'production',
+    sameSite: Credentials.NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },

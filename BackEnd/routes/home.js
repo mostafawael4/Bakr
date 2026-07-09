@@ -1,94 +1,68 @@
 import { Router } from 'express';
-import multer from 'multer';
-import fs from 'fs/promises';
-import path from 'path';
 import Home from '../models/Home.js';
 import { requireAdminAuth } from '../middleware/auth.js';
-import allowedExtensions from '../config/allowed_extensions.js';
-import { saveHomeFile, generateUniqueFilename } from '../services/upload.service.js';
-import { processImage } from '../services/imageProcessing.service.js';
-import { broadcast } from '../config/ws-server.js';
+import { deleteFromB2, getPresignedDownloadUrl } from '../services/b2.service.js';
 import logger from '../utils/logger.js';
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-});
 
 const router = Router();
 
+// GET all home images (public) — returns images with signed URLs
 router.get('/', async (req, res, next) => {
   try {
-    const images = await Home.find().sort({ uploadedAt: -1 });
-    res.json({ ok: true, images });
+    const images = await Home.find().sort({ uploadedAt: -1 }).lean();
+    
+    const signedImages = await Promise.all(
+      images.map(async (img) => {
+        return {
+          ...img,
+          url: await getPresignedDownloadUrl(img.url),
+          thumbnail: img.thumbnail ? await getPresignedDownloadUrl(img.thumbnail) : null,
+          medium: img.medium ? await getPresignedDownloadUrl(img.medium) : null,
+          hero: img.hero ? await getPresignedDownloadUrl(img.hero) : null,
+        };
+      })
+    );
+
+    res.json({ ok: true, images: signedImages });
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/upload', requireAdminAuth, upload.array('images'), async (req, res, next) => {
+// POST save home images metadata (admin) — receives uploaded B2 keys
+router.post('/upload', requireAdminAuth, async (req, res, next) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ ok: false, message: 'No image files provided' });
-    }
-
-    const invalidFile = req.files.find(f => !allowedExtensions.images.includes(f.mimetype));
-    if (invalidFile) {
-      return res.status(400).json({ ok: false, message: `Invalid file type: ${invalidFile.originalname}. Allowed: JPEG, PNG, WebP, AVIF` });
+    const { images } = req.body;
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ ok: false, message: 'No image data provided' });
     }
 
     const savedImages = [];
-    const total = req.files.length;
 
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-      const uniqueFilename = generateUniqueFilename(file.originalname);
-      const url = saveHomeFile(file.buffer, uniqueFilename);
+    for (const imgData of images) {
+      const { filename, originalName, url, thumbnail, medium, hero, size } = imgData;
+
+      if (!filename || !originalName || !url) {
+        return res.status(400).json({ ok: false, message: 'Missing filename, originalName, or url' });
+      }
 
       const image = await Home.create({
-        filename: uniqueFilename,
-        originalName: file.originalname,
-        url,
-        size: file.size,
+        filename,
+        originalName,
+        url, // B2 key
+        thumbnail: thumbnail || null,
+        medium: medium || null,
+        hero: hero || null,
+        size: size || 0,
       });
 
-      savedImages.push(image);
+      const imgObj = image.toObject();
+      imgObj.url = await getPresignedDownloadUrl(image.url);
+      imgObj.thumbnail = image.thumbnail ? await getPresignedDownloadUrl(image.thumbnail) : null;
+      imgObj.medium = image.medium ? await getPresignedDownloadUrl(image.medium) : null;
+      imgObj.hero = image.hero ? await getPresignedDownloadUrl(image.hero) : null;
 
-      broadcast({
-        type: 'upload-progress',
-        filename: file.originalname,
-        step: 'saved',
-        current: i + 1,
-        total,
-      });
-
-      const localDiskPath = path.join('uploads', 'home', uniqueFilename);
-      const baseName = path.basename(uniqueFilename, path.extname(uniqueFilename));
-
-      const onProgress = (step) => {
-        broadcast({
-          type: 'upload-progress',
-          filename: file.originalname,
-          step,
-          current: i + 1,
-          total,
-        });
-      };
-
-      processImage(localDiskPath, baseName, 'uploads/home', onProgress)
-        .then(({ thumbnail, medium, hero }) =>
-          Home.updateOne({ filename: uniqueFilename }, { $set: { thumbnail, medium, hero } })
-        )
-        .then(() => {
-          broadcast({
-            type: 'upload-progress',
-            filename: file.originalname,
-            step: 'complete',
-            current: i + 1,
-            total,
-          });
-        })
-        .catch(err => logger.error('[ImageProcessing] Background error:', err));
+      savedImages.push(imgObj);
     }
 
     res.status(201).json({ ok: true, images: savedImages });
@@ -97,6 +71,7 @@ router.post('/upload', requireAdminAuth, upload.array('images'), async (req, res
   }
 });
 
+// DELETE single home image (admin)
 router.delete('/:id', requireAdminAuth, async (req, res, next) => {
   try {
     const image = await Home.findById(req.params.id);
@@ -104,27 +79,15 @@ router.delete('/:id', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Image not found' });
     }
 
-    const filesToDelete = [
-      path.join('uploads', 'home', image.filename),
-    ];
-
-    if (image.thumbnail) {
-      filesToDelete.push(path.join('.', image.thumbnail));
-    }
-    if (image.medium) {
-      filesToDelete.push(path.join('.', image.medium));
-    }
-    if (image.hero) {
-      filesToDelete.push(path.join('.', image.hero));
-    }
-
-    for (const filePath of filesToDelete) {
-      await fs.unlink(filePath).catch(() => {});
-    }
+    // Delete files from B2
+    if (image.url) await deleteFromB2(image.url).catch(() => {});
+    if (image.thumbnail) await deleteFromB2(image.thumbnail).catch(() => {});
+    if (image.medium) await deleteFromB2(image.medium).catch(() => {});
+    if (image.hero) await deleteFromB2(image.hero).catch(() => {});
 
     await Home.deleteOne({ _id: image._id });
 
-    res.json({ ok: true, message: 'Image deleted' });
+    res.json({ ok: true, message: 'Image deleted from B2 and DB' });
   } catch (err) {
     next(err);
   }

@@ -10,6 +10,9 @@ export default {
   B2_APP_KEY: process.env.B2_APP_KEY,
   B2_BUCKET_ID: process.env.B2_BUCKET_ID,
   B2_BUCKET_NAME: process.env.B2_BUCKET_NAME,
+  B2_ENDPOINT: process.env.B2_ENDPOINT,
+  B2_REGION: process.env.B2_REGION,
+  B2_PRIVATE: process.env.B2_PRIVATE === 'true',
   CDN_URL: process.env.CDN_URL,
   OFFICIAL_CDN_URL: process.env.OFFICIAL_CDN_URL,
 };

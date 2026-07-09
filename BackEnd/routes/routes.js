@@ -5,6 +5,7 @@ import packageRouter from './package.js';
 import galleryRouter from './gallery.js';
 import clientEventRouter from './clientEvent.js';
 import feedbackRouter from './feedback.js';
+import uploadRouter from './upload.routes.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/packages', packageRouter);
 router.use('/gallery', galleryRouter);
 router.use('/client-events', clientEventRouter);
 router.use('/feedbacks', feedbackRouter);
+router.use('/uploads', uploadRouter);
 
 export default router;

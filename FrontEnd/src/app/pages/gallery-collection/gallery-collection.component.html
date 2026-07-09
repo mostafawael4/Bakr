@@ -99,6 +99,7 @@
   [visible]="showModal"
   [editEvent]="editTarget"
   mode="event"
+  [loading]="isSaving"
   (closed)="onModalClosed()"
   (saved)="onModalSaved($event)"
 />
@@ -106,6 +107,7 @@
 <!-- Delete Confirmation -->
 <app-confirm-dialog
   [visible]="showDeleteDialog"
+  [loading]="isDeleting"
   title="Delete Event"
   [message]="'Delete \'' + (deleteTarget?.name || '') + '\' and all its photos? This cannot be undone.'"
   confirmText="Delete"

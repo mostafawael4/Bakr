@@ -1,29 +1,18 @@
 import { Router } from 'express';
-import multer from 'multer';
-import fs from 'fs/promises';
-import path from 'path';
 import ClientEvent from '../models/ClientEvent.js';
 import ClientEventImage from '../models/ClientEventImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
-import allowedExtensions from '../config/allowed_extensions.js';
-import { saveGalleryFile, generateUniqueFilename } from '../services/upload.service.js';
-import { processImage } from '../services/imageProcessing.service.js';
-import { broadcast } from '../config/ws-server.js';
+import { deleteFromB2, getPresignedDownloadUrl } from '../services/b2.service.js';
 import logger from '../utils/logger.js';
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-});
 
 const router = Router();
 
 async function resolveFolderCover(eventId, folderKey, coverImageId) {
   if (coverImageId) {
-    const chosen = await ClientEventImage.findOne({ _id: coverImageId, eventId, folderKey });
+    const chosen = await ClientEventImage.findOne({ _id: coverImageId, eventId, folderKey }).lean();
     if (chosen) return chosen;
   }
-  return ClientEventImage.findOne({ eventId, folderKey }).sort({ uploadedAt: 1 });
+  return ClientEventImage.findOne({ eventId, folderKey }).sort({ uploadedAt: 1 }).lean();
 }
 
 async function buildFolders(event) {
@@ -34,10 +23,16 @@ async function buildFolders(event) {
     keys.map(async (key) => {
       const count = await ClientEventImage.countDocuments({ eventId: event._id, folderKey: key });
       const coverImg = await resolveFolderCover(event._id, key, covers[key]);
+      
+      let coverUrl = null;
+      if (coverImg) {
+        coverUrl = await getPresignedDownloadUrl(coverImg.medium || coverImg.url);
+      }
+
       return {
         key,
         count,
-        coverImage: coverImg ? (coverImg.medium || coverImg.url) : null,
+        coverImage: coverUrl,
         coverImageId: coverImg ? coverImg._id.toString() : null,
       };
     })
@@ -61,12 +56,13 @@ function parseFocal(value, fallback = 50) {
   return Math.min(100, Math.max(0, Math.round(n)));
 }
 
-function publicEventPayload(event) {
+async function publicEventPayload(event) {
+  const bgImage = event.backgroundImage ? await getPresignedDownloadUrl(event.backgroundImage) : null;
   return {
     _id: event._id,
     brideName: event.brideName,
     groomName: event.groomName,
-    backgroundImage: event.backgroundImage,
+    backgroundImage: bgImage,
     heroFocalX: event.heroFocalX ?? 50,
     heroFocalY: event.heroFocalY ?? 50,
   };
@@ -78,7 +74,6 @@ function requireClientAccess(req, res, next) {
   if (req.session && req.session.clientEventId === eventId) {
     return next();
   }
-  // Also allow admin through
   if (req.session && req.session.adminId) {
     return next();
   }
@@ -98,7 +93,13 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
       events.map(async (ev) => {
         const imageCount = await ClientEventImage.countDocuments({ eventId: ev._id });
         const folders = await ClientEventImage.distinct('folderKey', { eventId: ev._id });
-        return { ...ev, imageCount, folderCount: folders.length };
+        
+        const backgroundImageKey = ev.backgroundImage || null;
+        if (ev.backgroundImage) {
+          ev.backgroundImage = await getPresignedDownloadUrl(ev.backgroundImage);
+        }
+
+        return { ...ev, backgroundImageKey, imageCount, folderCount: folders.length };
       })
     );
 
@@ -109,48 +110,43 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
 });
 
 // POST create client event (admin)
-router.post('/', requireAdminAuth, upload.single('background'), async (req, res, next) => {
+router.post('/', requireAdminAuth, async (req, res, next) => {
   try {
-    const { brideName, groomName, password, heroFocalX, heroFocalY } = req.body;
+    const { brideName, groomName, password, backgroundImage, heroFocalX, heroFocalY } = req.body;
 
     if (!brideName || !groomName || !password) {
       return res.status(400).json({ ok: false, message: 'Bride name, groom name, and password are required' });
-    }
-
-    let backgroundImage = null;
-
-    if (req.file) {
-      if (!allowedExtensions.images.includes(req.file.mimetype)) {
-        return res.status(400).json({ ok: false, message: 'Invalid image type' });
-      }
-      const folder = 'client-events';
-      const filename = generateUniqueFilename(req.file.originalname);
-      backgroundImage = saveGalleryFile(req.file.buffer, filename, folder);
     }
 
     const event = await ClientEvent.create({
       brideName,
       groomName,
       password,
-      backgroundImage,
+      backgroundImage, // This is the B2 key path
       heroFocalX: parseFocal(heroFocalX),
       heroFocalY: parseFocal(heroFocalY),
     });
-    res.status(201).json({ ok: true, event });
+
+    const eventObj = event.toObject();
+    if (eventObj.backgroundImage) {
+      eventObj.backgroundImage = await getPresignedDownloadUrl(eventObj.backgroundImage);
+    }
+
+    res.status(201).json({ ok: true, event: eventObj });
   } catch (err) {
     next(err);
   }
 });
 
 // PUT update client event (admin)
-router.put('/:id', requireAdminAuth, upload.single('background'), async (req, res, next) => {
+router.put('/:id', requireAdminAuth, async (req, res, next) => {
   try {
     const event = await ClientEvent.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const { brideName, groomName, password, isActive, heroFocalX, heroFocalY } = req.body;
+    const { brideName, groomName, password, isActive, heroFocalX, heroFocalY, backgroundImage } = req.body;
     if (brideName !== undefined) event.brideName = brideName;
     if (groomName !== undefined) event.groomName = groomName;
     if (password !== undefined) event.password = password;
@@ -158,23 +154,22 @@ router.put('/:id', requireAdminAuth, upload.single('background'), async (req, re
     if (heroFocalX !== undefined) event.heroFocalX = parseFocal(heroFocalX, event.heroFocalX ?? 50);
     if (heroFocalY !== undefined) event.heroFocalY = parseFocal(heroFocalY, event.heroFocalY ?? 50);
 
-    if (req.file) {
-      if (!allowedExtensions.images.includes(req.file.mimetype)) {
-        return res.status(400).json({ ok: false, message: 'Invalid image type' });
-      }
-
+    if (backgroundImage !== undefined) {
       // Delete old background if exists
-      if (event.backgroundImage) {
-        await fs.unlink(path.join('.', event.backgroundImage)).catch(() => {});
+      if (event.backgroundImage && event.backgroundImage !== backgroundImage) {
+        await deleteFromB2(event.backgroundImage).catch(() => {});
       }
-
-      const folder = 'client-events';
-      const filename = generateUniqueFilename(req.file.originalname);
-      event.backgroundImage = saveGalleryFile(req.file.buffer, filename, folder);
+      event.backgroundImage = backgroundImage;
     }
 
     await event.save();
-    res.json({ ok: true, event });
+
+    const eventObj = event.toObject();
+    if (eventObj.backgroundImage) {
+      eventObj.backgroundImage = await getPresignedDownloadUrl(eventObj.backgroundImage);
+    }
+
+    res.json({ ok: true, event: eventObj });
   } catch (err) {
     next(err);
   }
@@ -188,30 +183,23 @@ router.delete('/:id', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    // Delete all images
+    // Delete all images from B2
     const images = await ClientEventImage.find({ eventId: event._id });
     for (const img of images) {
-      const filesToDelete = [path.join('.', img.url)];
-      if (img.thumbnail) filesToDelete.push(path.join('.', img.thumbnail));
-      if (img.medium) filesToDelete.push(path.join('.', img.medium));
-      if (img.hero) filesToDelete.push(path.join('.', img.hero));
-      for (const f of filesToDelete) {
-        await fs.unlink(f).catch(() => {});
-      }
+      if (img.url) await deleteFromB2(img.url).catch(() => {});
+      if (img.thumbnail) await deleteFromB2(img.thumbnail).catch(() => {});
+      if (img.medium) await deleteFromB2(img.medium).catch(() => {});
+      if (img.hero) await deleteFromB2(img.hero).catch(() => {});
     }
     await ClientEventImage.deleteMany({ eventId: event._id });
 
     // Delete background image
     if (event.backgroundImage) {
-      await fs.unlink(path.join('.', event.backgroundImage)).catch(() => {});
+      await deleteFromB2(event.backgroundImage).catch(() => {});
     }
 
-    // Try to remove the event folder
-    const eventFolder = `client-event-${event._id}`;
-    await fs.rm(path.join('uploads', 'gallery', eventFolder), { recursive: true, force: true }).catch(() => {});
-
     await ClientEvent.deleteOne({ _id: event._id });
-    res.json({ ok: true, message: 'Event and all images deleted' });
+    res.json({ ok: true, message: 'Event and all images deleted from B2' });
   } catch (err) {
     next(err);
   }
@@ -248,14 +236,14 @@ router.post('/access', async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: publicEventPayload(event),
+      event: await publicEventPayload(event),
     });
   } catch (err) {
     next(err);
   }
 });
 
-// GET check client session (public — used to restore session on page refresh)
+// GET check client session (public)
 router.get('/access/check', async (req, res, next) => {
   try {
     if (!req.session || !req.session.clientEventId) {
@@ -269,7 +257,7 @@ router.get('/access/check', async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: publicEventPayload(event),
+      event: await publicEventPayload(event),
     });
   } catch (err) {
     next(err);
@@ -292,7 +280,7 @@ router.get('/:id/details', requireClientAccess, async (req, res, next) => {
 
     res.json({
       ok: true,
-      event: publicEventPayload(event),
+      event: await publicEventPayload(event),
       folders: folderCounts,
     });
   } catch (err) {
@@ -308,8 +296,21 @@ router.get('/:id/images', requireClientAccess, async (req, res, next) => {
       filter.folderKey = req.query.folder;
     }
 
-    const images = await ClientEventImage.find(filter).sort({ uploadedAt: -1 });
-    res.json({ ok: true, images });
+    const images = await ClientEventImage.find(filter).sort({ uploadedAt: -1 }).lean();
+
+    const signedImages = await Promise.all(
+      images.map(async (img) => {
+        return {
+          ...img,
+          url: await getPresignedDownloadUrl(img.url),
+          thumbnail: img.thumbnail ? await getPresignedDownloadUrl(img.thumbnail) : null,
+          medium: img.medium ? await getPresignedDownloadUrl(img.medium) : null,
+          hero: img.hero ? await getPresignedDownloadUrl(img.hero) : null,
+        };
+      })
+    );
+
+    res.json({ ok: true, images: signedImages });
   } catch (err) {
     next(err);
   }
@@ -352,7 +353,7 @@ router.put('/:id/folders/:folderKey/cover', requireAdminAuth, async (req, res, n
       _id: imageId,
       eventId: event._id,
       folderKey: req.params.folderKey,
-    });
+    }).lean();
 
     if (!image) {
       return res.status(404).json({ ok: false, message: 'Image not found in this folder' });
@@ -363,97 +364,63 @@ router.put('/:id/folders/:folderKey/cover', requireAdminAuth, async (req, res, n
     event.markModified('folderCovers');
     await event.save();
 
+    const signedCoverUrl = await getPresignedDownloadUrl(image.medium || image.url);
+
     res.json({
       ok: true,
       coverImageId: image._id.toString(),
-      coverImage: image.medium || image.url,
+      coverImage: signedCoverUrl,
     });
   } catch (err) {
     next(err);
   }
 });
 
-// POST upload images to an event with folder key (admin)
-router.post('/:id/images', requireAdminAuth, upload.array('images'), async (req, res, next) => {
+// POST save client event images metadata (admin) — receives uploaded B2 keys
+router.post('/:id/images', requireAdminAuth, async (req, res, next) => {
   try {
     const event = await ClientEvent.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const { folderKey } = req.body;
+    const { folderKey, images } = req.body;
     if (!folderKey) {
       return res.status(400).json({ ok: false, message: 'Folder key is required' });
     }
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ ok: false, message: 'No image files provided' });
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ ok: false, message: 'No image data provided' });
     }
 
-    const invalidFile = req.files.find(f => !allowedExtensions.images.includes(f.mimetype));
-    if (invalidFile) {
-      return res.status(400).json({ ok: false, message: `Invalid file type: ${invalidFile.originalname}` });
-    }
-
-    const eventFolder = `client-event-${event._id}`;
     const savedImages = [];
-    const total = req.files.length;
 
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-      const uniqueFilename = generateUniqueFilename(file.originalname);
-      const url = saveGalleryFile(file.buffer, uniqueFilename, eventFolder);
+    for (const imgData of images) {
+      const { filename, originalName, url, thumbnail, medium, hero, size } = imgData;
+
+      if (!filename || !originalName || !url) {
+        return res.status(400).json({ ok: false, message: 'Missing filename, originalName, or url' });
+      }
 
       const image = await ClientEventImage.create({
         eventId: event._id,
-        filename: uniqueFilename,
-        originalName: file.originalname,
-        url,
-        size: file.size,
+        filename,
+        originalName,
+        url, // B2 key path
+        thumbnail: thumbnail || null,
+        medium: medium || null,
+        hero: hero || null,
+        size: size || 0,
         folderKey,
       });
 
-      savedImages.push(image);
+      const imgObj = image.toObject();
+      imgObj.url = await getPresignedDownloadUrl(image.url);
+      imgObj.thumbnail = image.thumbnail ? await getPresignedDownloadUrl(image.thumbnail) : null;
+      imgObj.medium = image.medium ? await getPresignedDownloadUrl(image.medium) : null;
+      imgObj.hero = image.hero ? await getPresignedDownloadUrl(image.hero) : null;
 
-      broadcast({
-        type: 'client-event-upload-progress',
-        eventId: event._id.toString(),
-        filename: file.originalname,
-        step: 'saved',
-        current: i + 1,
-        total,
-      });
-
-      const localDiskPath = path.join('uploads', 'gallery', eventFolder, uniqueFilename);
-      const baseName = path.basename(uniqueFilename, path.extname(uniqueFilename));
-      const outputDir = path.join('uploads', 'gallery', eventFolder);
-
-      const onProgress = (step) => {
-        broadcast({
-          type: 'client-event-upload-progress',
-          eventId: event._id.toString(),
-          filename: file.originalname,
-          step,
-          current: i + 1,
-          total,
-        });
-      };
-
-      processImage(localDiskPath, baseName, outputDir, onProgress)
-        .then(({ thumbnail, medium, hero }) =>
-          ClientEventImage.updateOne({ _id: image._id }, { $set: { thumbnail, medium, hero } })
-        )
-        .then(() => {
-          broadcast({
-            type: 'client-event-upload-progress',
-            eventId: event._id.toString(),
-            filename: file.originalname,
-            step: 'complete',
-            current: i + 1,
-            total,
-          });
-        })
-        .catch(err => logger.error('[ClientEvent] Background processing error:', err));
+      savedImages.push(imgObj);
     }
 
     res.status(201).json({ ok: true, images: savedImages });
@@ -475,17 +442,14 @@ router.delete('/:eventId/images/:imageId', requireAdminAuth, async (req, res, ne
       await event.save();
     }
 
-    const filesToDelete = [path.join('.', image.url)];
-    if (image.thumbnail) filesToDelete.push(path.join('.', image.thumbnail));
-    if (image.medium) filesToDelete.push(path.join('.', image.medium));
-    if (image.hero) filesToDelete.push(path.join('.', image.hero));
-
-    for (const f of filesToDelete) {
-      await fs.unlink(f).catch(() => {});
-    }
+    // Delete files from B2
+    if (image.url) await deleteFromB2(image.url).catch(() => {});
+    if (image.thumbnail) await deleteFromB2(image.thumbnail).catch(() => {});
+    if (image.medium) await deleteFromB2(image.medium).catch(() => {});
+    if (image.hero) await deleteFromB2(image.hero).catch(() => {});
 
     await ClientEventImage.deleteOne({ _id: image._id });
-    res.json({ ok: true, message: 'Image deleted' });
+    res.json({ ok: true, message: 'Image deleted from B2 and DB' });
   } catch (err) {
     next(err);
   }
@@ -506,14 +470,12 @@ router.delete('/:eventId/folders/:folderKey', requireAdminAuth, async (req, res,
       await event.save();
     }
 
+    // Delete all images in folder from B2
     for (const img of images) {
-      const filesToDelete = [path.join('.', img.url)];
-      if (img.thumbnail) filesToDelete.push(path.join('.', img.thumbnail));
-      if (img.medium) filesToDelete.push(path.join('.', img.medium));
-      if (img.hero) filesToDelete.push(path.join('.', img.hero));
-      for (const f of filesToDelete) {
-        await fs.unlink(f).catch(() => {});
-      }
+      if (img.url) await deleteFromB2(img.url).catch(() => {});
+      if (img.thumbnail) await deleteFromB2(img.thumbnail).catch(() => {});
+      if (img.medium) await deleteFromB2(img.medium).catch(() => {});
+      if (img.hero) await deleteFromB2(img.hero).catch(() => {});
     }
 
     await ClientEventImage.deleteMany({
@@ -521,7 +483,7 @@ router.delete('/:eventId/folders/:folderKey', requireAdminAuth, async (req, res,
       folderKey: req.params.folderKey,
     });
 
-    res.json({ ok: true, message: `Folder "${req.params.folderKey}" and all its images deleted` });
+    res.json({ ok: true, message: `Folder "${req.params.folderKey}" and all its images deleted from B2` });
   } catch (err) {
     next(err);
   }
