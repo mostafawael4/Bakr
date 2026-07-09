@@ -25,9 +25,11 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   showModal = false;
   editTarget: Package | null = null;
+  isSaving = false;
 
   deleteTarget: Package | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   private observer: IntersectionObserver | null = null;
   private cardSub: Subscription | null = null;
@@ -120,20 +122,29 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onModalSaved(data: Partial<Package>): void {
+    this.isSaving = true;
     if (this.editTarget) {
       this.packageService.update(this.editTarget._id, data).subscribe({
         next: () => {
           this.showModal = false;
           this.editTarget = null;
+          this.isSaving = false;
           this.fetchPackages();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     } else {
       this.packageService.create(data).subscribe({
         next: () => {
           this.showModal = false;
+          this.isSaving = false;
           this.fetchPackages();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     }
   }
@@ -145,15 +156,18 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.packageService.delete(this.deleteTarget._id).subscribe({
       next: () => {
         this.packages = this.packages.filter(p => p._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

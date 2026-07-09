@@ -55,6 +55,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
 
   deleteTarget: GalleryImage | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   lightboxOpen = false;
   lightboxStart = 0;
@@ -341,6 +342,7 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     const imageId = this.deleteTarget._id;
+    this.isDeleting = true;
 
     this.galleryService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
@@ -349,10 +351,12 @@ export class GalleryDetailComponent implements OnInit, AfterViewInit, OnDestroy 
         this.rebuildMasonry();
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

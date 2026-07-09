@@ -1,62 +1,79 @@
 @if (visible) {
-  <div class="modal-overlay" (click)="close()">
+  <div class="modal-overlay" (click)="!loading && close()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ isEdit ? 'Edit Package' : 'Create Package' }}</h2>
-        <button class="close-btn" (click)="close()">
+        <button class="close-btn" (click)="close()" [disabled]="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
 
+      @if (loading) {
+        <div class="modal-loading-overlay">
+          <div class="creative-spinner"></div>
+          <p>{{ isEdit ? 'Updating Package...' : 'Creating Package...' }}</p>
+        </div>
+      }
+
       <form (ngSubmit)="submit()" class="modal-form">
         <div class="form-group">
           <label for="name">Package Name</label>
-          <input id="name" type="text" [(ngModel)]="form.name" name="name" placeholder="e.g. Full day package" required />
+          <input id="name" type="text" [(ngModel)]="form.name" name="name" placeholder="e.g. Full day package" required minlength="3" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!form.name.trim() || form.name.trim().length < 3)" />
+          @if (hasAttemptedSubmit && !form.name.trim()) { <span class="error-text">Required field</span> }
+          @else if (hasAttemptedSubmit && form.name.trim().length < 3) { <span class="error-text">Min 3 characters</span> }
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="hours">Hours</label>
-            <input id="hours" type="number" [(ngModel)]="form.hours" name="hours" min="1" required />
+            <input id="hours" type="number" [(ngModel)]="form.hours" name="hours" min="1" required [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!form.hours || form.hours < 1)" />
+            @if (hasAttemptedSubmit && (!form.hours || form.hours < 1)) { <span class="error-text">Min 1 hour</span> }
           </div>
           <div class="form-group">
             <label for="price">Price</label>
-            <input id="price" type="number" [(ngModel)]="form.price" name="price" min="0" required />
+            <input id="price" type="number" [(ngModel)]="form.price" name="price" min="0" required [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (form.price == null || form.price < 0)" />
+            @if (hasAttemptedSubmit && (form.price == null || form.price < 0)) { <span class="error-text">Invalid price</span> }
           </div>
           <div class="form-group">
             <label for="currency">Currency</label>
-            <input id="currency" type="text" [(ngModel)]="form.currency" name="currency" />
+            <input id="currency" type="text" [(ngModel)]="form.currency" name="currency" [disabled]="loading" />
           </div>
         </div>
 
         <div class="form-group">
           <label for="description">Description</label>
-          <textarea id="description" [(ngModel)]="form.description" name="description" rows="3" placeholder="e.g. including Abo bakr and 2 photographers"></textarea>
+          <textarea id="description" [(ngModel)]="form.description" name="description" rows="3" placeholder="e.g. including Abo bakr and 2 photographers" [disabled]="loading"></textarea>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="photographers">Photographers</label>
-            <input id="photographers" type="number" [(ngModel)]="form.photographers" name="photographers" min="1" />
+            <input id="photographers" type="number" [(ngModel)]="form.photographers" name="photographers" min="1" [disabled]="loading" />
           </div>
           <div class="form-group">
             <label for="order">Display Order</label>
-            <input id="order" type="number" [(ngModel)]="form.order" name="order" min="0" />
+            <input id="order" type="number" [(ngModel)]="form.order" name="order" min="0" [disabled]="loading" />
           </div>
         </div>
 
         <div class="form-group checkbox-group">
           <label>
-            <input type="checkbox" [(ngModel)]="form.includesMainPhotographer" name="includesMainPhotographer" />
+            <input type="checkbox" [(ngModel)]="form.includesMainPhotographer" name="includesMainPhotographer" [disabled]="loading" />
             <span>Includes main photographer</span>
           </label>
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" (click)="close()">Cancel</button>
-          <button type="submit" class="btn-save">{{ isEdit ? 'Update' : 'Create' }}</button>
+          <button type="button" class="btn-cancel" (click)="close()" [disabled]="loading">Cancel</button>
+          <button type="submit" class="btn-save" [disabled]="loading">
+            @if (loading) {
+              {{ isEdit ? 'Updating...' : 'Creating...' }}
+            } @else {
+              {{ isEdit ? 'Update' : 'Create' }}
+            }
+          </button>
         </div>
       </form>
     </div>

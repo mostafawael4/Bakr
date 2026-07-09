@@ -15,12 +15,14 @@ export class GalleryEventModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() editEvent: GalleryEvent | GalleryCollection | null = null;
   @Input() mode: 'collection' | 'event' = 'event';
+  @Input() loading = false;
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<FormData>();
 
   name = '';
   coverFile: File | null = null;
   coverPreview: string | null = null;
+  hasAttemptedSubmit = false;
 
   get isEdit(): boolean {
     return this.editEvent !== null;
@@ -39,6 +41,7 @@ export class GalleryEventModalComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
+    this.hasAttemptedSubmit = false;
     if (this.editEvent) {
       this.name = this.editEvent.name;
       this.coverPreview = this.toFullUrl(this.editEvent.coverImage);
@@ -59,7 +62,9 @@ export class GalleryEventModalComponent implements OnChanges {
   }
 
   submit(): void {
-    if (!this.name.trim()) return;
+    this.hasAttemptedSubmit = true;
+
+    if (!this.name.trim() || this.name.trim().length < 3) return;
 
     const formData = new FormData();
     formData.append('name', this.name.trim());
@@ -74,6 +79,7 @@ export class GalleryEventModalComponent implements OnChanges {
     this.name = '';
     this.coverFile = null;
     this.coverPreview = null;
+    this.hasAttemptedSubmit = false;
   }
 
   private toFullUrl(path: string | null): string | null {

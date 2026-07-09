@@ -71,8 +71,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   // Delete
   deleteTarget: ClientEventImage | null = null;
   showDeleteDialog = false;
+  isDeletingImage = false;
   deleteFolderTarget: string | null = null;
   showDeleteFolderDialog = false;
+  isDeletingFolder = false;
 
   // Lightbox
   lightboxOpen = false;
@@ -415,6 +417,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   confirmDeleteImage(): void {
     if (!this.deleteTarget) return;
     const imageId = this.deleteTarget._id;
+    this.isDeletingImage = true;
 
     this.clientEventService.deleteImage(this.eventId, imageId).subscribe({
       next: () => {
@@ -431,10 +434,12 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         }
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeletingImage = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeletingImage = false;
       },
     });
   }
@@ -453,15 +458,18 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   confirmDeleteFolder(): void {
     if (!this.deleteFolderTarget) return;
+    this.isDeletingFolder = true;
     this.clientEventService.deleteFolder(this.eventId, this.deleteFolderTarget).subscribe({
       next: () => {
         this.folders = this.folders.filter(f => f.key !== this.deleteFolderTarget);
         this.showDeleteFolderDialog = false;
         this.deleteFolderTarget = null;
+        this.isDeletingFolder = false;
       },
       error: () => {
         this.showDeleteFolderDialog = false;
         this.deleteFolderTarget = null;
+        this.isDeletingFolder = false;
       },
     });
   }

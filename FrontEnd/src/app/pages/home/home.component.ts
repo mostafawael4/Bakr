@@ -56,6 +56,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   deleteTarget: HomeImage | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   lightboxOpen = false;
   lightboxStart = 0;
@@ -284,16 +285,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     const id = this.deleteTarget._id;
+    this.isDeleting = true;
 
     this.http.delete(`${environment.apiUrl}/home/${id}`, { withCredentials: true }).subscribe({
       next: () => {
         this.images = this.images.filter(img => img._id !== id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

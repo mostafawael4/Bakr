@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ConfirmDialogComponent {
   @Input() visible = false;
+  @Input() loading = false;
   @Input() title = 'Confirm';
   @Input() message = 'Are you sure?';
   @Input() confirmText = 'Delete';

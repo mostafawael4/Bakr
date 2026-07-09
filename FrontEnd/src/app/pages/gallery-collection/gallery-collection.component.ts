@@ -32,9 +32,11 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
 
   showModal = false;
   editTarget: GalleryEvent | null = null;
+  isSaving = false;
 
   deleteTarget: GalleryEvent | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   private observer: IntersectionObserver | null = null;
   private cardSub: Subscription | null = null;
@@ -134,6 +136,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
   }
 
   async onModalSaved(formData: FormData): Promise<void> {
+    this.isSaving = true;
     const name = formData.get('name') as string;
     const coverFile = formData.get('cover') as File;
 
@@ -145,6 +148,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
         coverImageKey = result.thumbnail || result.medium || result.url;
       } catch (err) {
         console.error('Failed to upload event cover image to B2:', err);
+        this.isSaving = false;
         return;
       }
     }
@@ -154,15 +158,23 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
         next: () => {
           this.showModal = false;
           this.editTarget = null;
+          this.isSaving = false;
           this.fetchEvents();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     } else {
       this.galleryService.createEvent(this.collectionId, { name, coverImage: coverImageKey }).subscribe({
         next: () => {
           this.showModal = false;
+          this.isSaving = false;
           this.fetchEvents();
         },
+        error: () => {
+          this.isSaving = false;
+        }
       });
     }
   }
@@ -176,15 +188,18 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.galleryService.deleteEvent(this.deleteTarget._id).subscribe({
       next: () => {
         this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

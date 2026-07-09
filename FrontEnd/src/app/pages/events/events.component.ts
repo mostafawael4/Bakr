@@ -30,6 +30,7 @@ export class EventsComponent implements OnInit {
 
   deleteTarget: ClientEvent | null = null;
   showDeleteDialog = false;
+  isDeleting = false;
 
   copiedId: string | null = null;
 
@@ -131,15 +132,18 @@ export class EventsComponent implements OnInit {
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
+    this.isDeleting = true;
     this.clientEventService.deleteEvent(this.deleteTarget._id).subscribe({
       next: () => {
         this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
       error: () => {
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.isDeleting = false;
       },
     });
   }

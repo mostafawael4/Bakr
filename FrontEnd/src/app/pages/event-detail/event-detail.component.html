@@ -254,12 +254,12 @@
   (closed)="closeLightbox()" (downloadRequested)="downloadLightboxImage($event)" />
 
 <!-- Delete Image Dialog -->
-<app-confirm-dialog [visible]="showDeleteDialog" title="Delete Image"
+<app-confirm-dialog [visible]="showDeleteDialog" [loading]="isDeletingImage" title="Delete Image"
   message="Delete this image? This cannot be undone." confirmText="Delete" (confirmed)="confirmDeleteImage()"
   (cancelled)="cancelDeleteImage()" />
 
 <!-- Delete Folder Dialog -->
-<app-confirm-dialog [visible]="showDeleteFolderDialog" title="Delete Folder"
+<app-confirm-dialog [visible]="showDeleteFolderDialog" [loading]="isDeletingFolder" title="Delete Folder"
   message="Delete this folder and ALL its images? This cannot be undone." confirmText="Delete All"
   (confirmed)="confirmDeleteFolder()" (cancelled)="cancelDeleteFolder()" />
 

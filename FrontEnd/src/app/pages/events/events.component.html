@@ -146,6 +146,7 @@
 <!-- Delete Confirmation -->
 <app-confirm-dialog
   [visible]="showDeleteDialog"
+  [loading]="isDeleting"
   title="Delete Event"
   message="Are you sure you want to delete this event and all its images? This cannot be undone."
   confirmText="Delete"

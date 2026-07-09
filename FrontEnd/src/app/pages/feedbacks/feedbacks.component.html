@@ -233,6 +233,7 @@
 <!-- Delete Confirmation Dialog -->
 <app-confirm-dialog
   [visible]="showDeleteDialog"
+  [loading]="isDeleting"
   title="Delete Feedback"
   [message]="'Are you sure you want to delete this feedback from \'' + (deleteTarget?.name || '') + '\'? This action cannot be undone.'"
   confirmText="Delete"
