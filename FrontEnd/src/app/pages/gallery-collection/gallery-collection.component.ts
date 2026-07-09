@@ -142,7 +142,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     if (coverFile) {
       try {
         const result = await this.b2UploadService.uploadImage(coverFile, `gallery/${this.collectionId}`);
-        coverImageKey = result.url;
+        coverImageKey = result.thumbnail || result.medium || result.url;
       } catch (err) {
         console.error('Failed to upload event cover image to B2:', err);
         return;

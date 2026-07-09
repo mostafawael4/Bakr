@@ -133,7 +133,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     if (coverFile) {
       try {
         const result = await this.b2UploadService.uploadImage(coverFile, 'collections');
-        coverImageKey = result.url;
+        coverImageKey = result.thumbnail || result.medium || result.url;
       } catch (err) {
         console.error('Failed to upload collection cover image to B2:', err);
         return;

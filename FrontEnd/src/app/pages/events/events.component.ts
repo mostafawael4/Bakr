@@ -80,7 +80,7 @@ export class EventsComponent implements OnInit {
     if (backgroundFile) {
       try {
         const result = await this.b2UploadService.uploadImage(backgroundFile, 'client-events');
-        backgroundImageKey = result.url;
+        backgroundImageKey = result.hero || result.medium || result.url;
       } catch (err) {
         console.error('Failed to upload background image to B2:', err);
         this.isSaving = false;
