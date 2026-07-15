@@ -1,18 +1,18 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChild, ViewChildren, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { GalleryService, GalleryCollection, GalleryEvent } from '../../services/gallery.service';
-import { GalleryEventModalComponent } from '../../components/gallery-event-modal/gallery-event-modal.component';
+import { GalleryService, GalleryCollection, GalleryImage } from '../../services/gallery.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
 import { B2UploadService } from '../../services/b2-upload.service';
 import { environment } from '../../../environments/environment';
+import { ImageLightboxComponent, ImageLightboxSlide } from '../../components/image-lightbox/image-lightbox.component';
 
 @Component({
   selector: 'app-gallery-collection',
   standalone: true,
-  imports: [CommonModule, RouterLink, GalleryEventModalComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterLink, ConfirmDialogComponent, UploadModalComponent, ImageLightboxComponent],
   templateUrl: './gallery-collection.component.html',
   styleUrls: ['./gallery-collection.component.scss'],
 })
@@ -23,23 +23,40 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
   private b2UploadService = inject(B2UploadService);
   private platformId = inject(PLATFORM_ID);
 
-  @ViewChildren('cardItem') cardItems!: QueryList<ElementRef>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChildren('gridItem') gridItems!: QueryList<ElementRef>;
 
   collection: GalleryCollection | null = null;
-  events: GalleryEvent[] = [];
+  collectionImages: GalleryImage[] = [];
+  displayedImages: GalleryImage[] = [];
+  masonryColumns: { images: GalleryImage[] }[] = [];
+  columnCount = 4;
+  pageSize = 20;
+
   loading = true;
   collectionId = '';
 
-  showModal = false;
-  editTarget: GalleryEvent | null = null;
-  isSaving = false;
+  uploadState: UploadState = {
+    visible: false,
+    totalFiles: 0,
+    totalSize: 0,
+    currentFile: 0,
+    percent: 0,
+    statusLabel: '',
+    done: false,
+    successCount: 0,
+    failCount: 0,
+  };
 
-  deleteTarget: GalleryEvent | null = null;
-  showDeleteDialog = false;
-  isDeleting = false;
+  deletingCollectionImage: GalleryImage | null = null;
+  showCollectionImageDeleteDialog = false;
+  isDeletingCollectionImage = false;
+
+  lightboxOpen = false;
+  lightboxStart = 0;
 
   private observer: IntersectionObserver | null = null;
-  private cardSub: Subscription | null = null;
+  private gridSub: any = null;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -47,19 +64,173 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
 
   ngOnInit(): void {
     this.collectionId = this.route.snapshot.paramMap.get('collectionId') || '';
-    this.fetchEvents();
+    this.fetchCollectionData();
+  }
+
+  private fetchCollectionData(): void {
+    if (!this.collectionId) {
+      this.loading = false;
+      return;
+    }
+    this.loading = true;
+    this.galleryService.getCollectionImages(this.collectionId).subscribe({
+      next: (res) => {
+        this.collection = res.collection;
+        this.loading = false;
+        this.fetchCollectionImages();
+      },
+      error: () => {
+        this.loading = false;
+      },
+    });
+  }
+
+  private fetchCollectionImages(): void {
+    if (!this.collectionId) {
+      return;
+    }
+
+    this.galleryService.getCollectionImages(this.collectionId).subscribe({
+      next: (res) => {
+        this.collectionImages = res.images;
+        this.displayedImages = this.collectionImages.slice(0, this.pageSize);
+        this.rebuildMasonry();
+      },
+      error: () => {
+        this.collectionImages = [];
+        this.displayedImages = [];
+        this.masonryColumns = [];
+      },
+    });
+  }
+
+  openCollectionUpload(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  async onCollectionImagesSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const fileList = Array.from(input.files);
+    let totalSize = 0;
+    for (const file of fileList) {
+      totalSize += file.size;
+    }
+
+    this.uploadState = {
+      visible: true,
+      totalFiles: fileList.length,
+      totalSize,
+      currentFile: 0,
+      percent: 0,
+      statusLabel: 'Preparing upload...',
+      done: false,
+      successCount: 0,
+      failCount: 0,
+    };
+
+    const uploadedImages: any[] = [];
+    let completedCount = 0;
+
+    const progressSub = this.b2UploadService.progress$.subscribe((p) => {
+      const currentFileIndex = fileList.findIndex((f) => f.name === p.filename);
+      if (currentFileIndex !== -1) {
+        const fileWeight = 100 / fileList.length;
+        const totalCompletedWeight = completedCount * fileWeight;
+        const currentFileWeight = (p.percent / 100) * fileWeight;
+        const overallPercent = Math.round(totalCompletedWeight + currentFileWeight);
+
+        this.uploadState = {
+          ...this.uploadState,
+          percent: Math.min(99, overallPercent),
+          currentFile: completedCount + 1,
+          statusLabel: `Uploading ${p.filename} (${p.step})... ${p.percent}%`,
+        };
+      }
+    });
+
+    for (const file of fileList) {
+      try {
+        const result = await this.b2UploadService.uploadImage(file, `gallery/${this.collectionId}`);
+        uploadedImages.push(result);
+        completedCount++;
+        this.uploadState.successCount++;
+      } catch (err) {
+        this.uploadState.failCount++;
+        completedCount++;
+      }
+    }
+
+    progressSub.unsubscribe();
+
+    if (uploadedImages.length > 0) {
+      this.uploadState = {
+        ...this.uploadState,
+        percent: 99,
+        statusLabel: 'Saving details to database...',
+      };
+
+      this.galleryService.uploadCollectionImages(this.collectionId, uploadedImages).subscribe({
+        next: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            percent: 100,
+            statusLabel: `Completed successfully (${this.uploadState.successCount}/${fileList.length})`,
+          };
+          input.value = '';
+          this.fetchCollectionImages();
+        },
+        error: () => {
+          this.uploadState = {
+            ...this.uploadState,
+            done: true,
+            statusLabel: 'Failed to save upload info to database',
+          };
+          input.value = '';
+        },
+      });
+    } else {
+      this.uploadState = {
+        ...this.uploadState,
+        done: true,
+        statusLabel: 'All uploads failed',
+      };
+      input.value = '';
+    }
+  }
+
+  onUploadDismissed(): void {
+    this.uploadState = { ...this.uploadState, visible: false };
+    this.fetchCollectionImages();
   }
 
   ngAfterViewInit(): void {
     if (this.isBrowser) {
       this.setupObserver();
-      this.cardSub = this.cardItems.changes.subscribe(() => this.observeItems());
+      this.gridSub = this.gridItems.changes.subscribe(() => this.observeItems());
     }
   }
 
   ngOnDestroy(): void {
+    this.gridSub?.unsubscribe?.();
     this.observer?.disconnect();
-    this.cardSub?.unsubscribe();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.calculateColumnCount();
+  }
+
+  @HostListener('window:scroll', [])
+  onScroll(): void {
+    if (!this.isBrowser || this.displayedImages.length === this.collectionImages.length) return;
+    const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
+    const max = document.documentElement.scrollHeight;
+    if (pos > max - 400) {
+      this.loadMoreImages();
+    }
   }
 
   private setupObserver(): void {
@@ -83,7 +254,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     if (!this.observer) {
       this.setupObserver();
     }
-    this.cardItems?.forEach((item) => {
+    this.gridItems?.forEach((item) => {
       const el = item.nativeElement;
       if (!el.classList.contains('visible')) {
         this.observer?.observe(el);
@@ -91,122 +262,119 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
-  private scheduleObserve(): void {
-    if (!this.isBrowser || this.events.length === 0) return;
+  private scheduleObserveGrid(): void {
+    if (!this.isBrowser || this.displayedImages.length === 0) return;
     queueMicrotask(() => {
       this.observeItems();
       setTimeout(() => this.observeItems(), 0);
     });
   }
 
-  private fetchEvents(): void {
-    if (!this.collectionId) {
-      this.loading = false;
-      return;
+  loadMoreImages(): void {
+    const nextImages = this.collectionImages.slice(this.displayedImages.length, this.displayedImages.length + this.pageSize);
+    if (nextImages.length > 0) {
+      const startIndex = this.displayedImages.length;
+      this.displayedImages = [...this.displayedImages, ...nextImages];
+      nextImages.forEach((img, idx) => {
+        const globalIndex = startIndex + idx;
+        this.masonryColumns[globalIndex % this.columnCount].images.push(img);
+      });
+      this.scheduleObserveGrid();
     }
-    this.loading = true;
-    this.galleryService.getCollectionEvents(this.collectionId).subscribe({
-      next: (res) => {
-        this.collection = res.collection;
-        this.events = res.events;
-        this.loading = false;
-        this.scheduleObserve();
-      },
-      error: () => {
-        this.loading = false;
-      },
+  }
+
+  private calculateColumnCount(): void {
+    if (!this.isBrowser) return;
+    const width = window.innerWidth;
+    let newCount = 4;
+    if (width <= 768) newCount = 2;
+    else if (width <= 1024) newCount = 3;
+
+    if (newCount !== this.columnCount || this.masonryColumns.length === 0) {
+      this.columnCount = newCount;
+      this.rebuildMasonry();
+    }
+  }
+
+  private rebuildMasonry(): void {
+    this.masonryColumns = Array.from({ length: this.columnCount }, () => ({ images: [] }));
+    this.displayedImages.forEach((img, idx) => {
+      this.masonryColumns[idx % this.columnCount].images.push(img);
     });
+    this.scheduleObserveGrid();
   }
 
-  openCreate(): void {
-    this.editTarget = null;
-    this.showModal = true;
+  getFullUrl(path: string | null): string {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${environment.apiUrl.replace('/api', '')}${path}`;
   }
 
-  openEdit(event: GalleryEvent, e: MouseEvent): void {
-    e.stopPropagation();
-    e.preventDefault();
-    this.editTarget = event;
-    this.showModal = true;
+  getSrcset(image: GalleryImage): string {
+    const parts: string[] = [];
+    if (image.thumbnail) parts.push(`${this.getFullUrl(image.thumbnail)} 400w`);
+    if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
+    if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
+    return parts.join(', ');
   }
 
-  onModalClosed(): void {
-    this.showModal = false;
-    this.editTarget = null;
+  get lightboxSlides(): ImageLightboxSlide[] {
+    return this.collectionImages.map((img) => ({
+      src: this.getFullUrl(img.hero || img.medium || img.url),
+      srcset: this.getLightboxSrcset(img),
+      alt: img.originalName,
+    }));
   }
 
-  async onModalSaved(formData: FormData): Promise<void> {
-    this.isSaving = true;
-    const name = formData.get('name') as string;
-    const coverFile = formData.get('cover') as File;
-
-    let coverImageKey: string | null = this.editTarget ? (this.editTarget.coverImage ? this.editTarget.coverImage : null) : null;
-
-    if (coverFile) {
-      try {
-        const result = await this.b2UploadService.uploadImage(coverFile, `gallery/${this.collectionId}`);
-        coverImageKey = result.thumbnail || result.medium || result.url;
-      } catch (err) {
-        console.error('Failed to upload event cover image to B2:', err);
-        this.isSaving = false;
-        return;
-      }
+  private getLightboxSrcset(image: GalleryImage): string {
+    const parts: string[] = [];
+    if (image.medium) parts.push(`${this.getFullUrl(image.medium)} 1200w`);
+    if (image.hero) parts.push(`${this.getFullUrl(image.hero)} 2000w`);
+    if (!image.hero && !image.medium && image.url) {
+      parts.push(`${this.getFullUrl(image.url)} 2400w`);
     }
+    return parts.join(', ');
+  }
 
-    if (this.editTarget) {
-      this.galleryService.updateEvent(this.editTarget._id, { name, coverImage: coverImageKey }).subscribe({
-        next: () => {
-          this.showModal = false;
-          this.editTarget = null;
-          this.isSaving = false;
-          this.fetchEvents();
-        },
-        error: () => {
-          this.isSaving = false;
-        }
-      });
-    } else {
-      this.galleryService.createEvent(this.collectionId, { name, coverImage: coverImageKey }).subscribe({
-        next: () => {
-          this.showModal = false;
-          this.isSaving = false;
-          this.fetchEvents();
-        },
-        error: () => {
-          this.isSaving = false;
-        }
-      });
+  openLightbox(image: GalleryImage): void {
+    const idx = this.collectionImages.findIndex((img) => img._id === image._id);
+    if (idx !== -1) {
+      this.lightboxStart = idx;
+      this.lightboxOpen = true;
     }
   }
 
-  askDelete(event: GalleryEvent, e: MouseEvent): void {
-    e.stopPropagation();
-    e.preventDefault();
-    this.deleteTarget = event;
-    this.showDeleteDialog = true;
+  closeLightbox(): void {
+    this.lightboxOpen = false;
   }
 
-  confirmDelete(): void {
-    if (!this.deleteTarget) return;
-    this.isDeleting = true;
-    this.galleryService.deleteEvent(this.deleteTarget._id).subscribe({
+  askDeleteCollectionImage(image: GalleryImage): void {
+    this.deletingCollectionImage = image;
+    this.showCollectionImageDeleteDialog = true;
+  }
+
+  confirmDeleteCollectionImage(): void {
+    if (!this.deletingCollectionImage || !this.collectionId) return;
+
+    this.isDeletingCollectionImage = true;
+    this.galleryService.deleteCollectionImage(this.collectionId, this.deletingCollectionImage._id).subscribe({
       next: () => {
-        this.events = this.events.filter(ev => ev._id !== this.deleteTarget!._id);
-        this.showDeleteDialog = false;
-        this.deleteTarget = null;
-        this.isDeleting = false;
+        this.collectionImages = this.collectionImages.filter(img => img._id !== this.deletingCollectionImage!._id);
+        this.showCollectionImageDeleteDialog = false;
+        this.deletingCollectionImage = null;
+        this.isDeletingCollectionImage = false;
       },
       error: () => {
-        this.showDeleteDialog = false;
-        this.deleteTarget = null;
-        this.isDeleting = false;
+        this.showCollectionImageDeleteDialog = false;
+        this.deletingCollectionImage = null;
+        this.isDeletingCollectionImage = false;
       },
     });
   }
 
-  cancelDelete(): void {
-    this.showDeleteDialog = false;
-    this.deleteTarget = null;
+  cancelDeleteCollectionImage(): void {
+    this.showCollectionImageDeleteDialog = false;
+    this.deletingCollectionImage = null;
   }
 
   getCoverUrl(coverImage: string | null): string {
