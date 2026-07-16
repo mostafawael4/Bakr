@@ -6,10 +6,19 @@ import logger from '../utils/logger.js';
 
 const router = Router();
 
-// GET all home images (public) — returns images with signed URLs
+// GET all home images (public) — returns images with signed URLs, supports pagination
 router.get('/', async (req, res, next) => {
   try {
-    const images = await Home.find().sort({ uploadedAt: -1 }).lean();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 16));
+    const skip = (page - 1) * limit;
+
+    const total = await Home.countDocuments();
+    const images = await Home.find()
+      .sort({ uploadedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
     
     const signedImages = await Promise.all(
       images.map(async (img) => {
@@ -23,7 +32,8 @@ router.get('/', async (req, res, next) => {
       })
     );
 
-    res.json({ ok: true, images: signedImages });
+    const hasMore = skip + limit < total;
+    res.json({ ok: true, images: signedImages, hasMore, total, page, limit });
   } catch (err) {
     next(err);
   }

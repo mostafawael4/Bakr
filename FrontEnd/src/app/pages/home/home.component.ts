@@ -37,10 +37,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChildren('scrollReveal', { read: ElementRef }) scrollRevealEls!: QueryList<ElementRef>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('scrollTrigger') scrollTrigger!: ElementRef<HTMLDivElement>;
 
   images: HomeImage[] = [];
   loading = true;
   error = false;
+
+  // Pagination state
+  currentPage = 1;
+  imageLimit = 16;
+  hasMore = true;
+  isLoadingMore = false;
+  private infiniteScrollObserver: IntersectionObserver | null = null;
 
   uploadState: UploadState = {
     visible: false,
@@ -60,6 +68,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   lightboxOpen = false;
   lightboxStart = 0;
+
+  loadedImages: Record<string, boolean> = {};
 
   private revealObserver: IntersectionObserver | null = null;
   private wsSub: Subscription | null = null;
@@ -100,12 +110,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isBrowser) {
       this.setupRevealObserver();
       this.scrollRevealEls.changes.subscribe(() => this.observeRevealElements());
+      this.setupInfiniteScrollObserver();
     }
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
     this.revealObserver?.disconnect();
+    this.infiniteScrollObserver?.disconnect();
   }
 
   private setupRevealObserver(): void {
@@ -134,26 +146,66 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private fetchImages(): void {
-    this.loading = true;
-    this.error = false;
+  private setupInfiniteScrollObserver(): void {
+    if (!this.scrollTrigger) return;
 
-    this.http.get<{ ok: boolean; images: HomeImage[] }>(`${environment.apiUrl}/home`).subscribe({
-      next: (res) => {
-        this.images = res.images;
-        this.loading = false;
-        if (this.isBrowser) {
-          queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
-        }
+    this.infiniteScrollObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && this.hasMore && !this.isLoadingMore) {
+            this.loadMoreImages();
+          }
+        });
       },
-      error: () => {
-        this.error = true;
-        this.loading = false;
-        if (this.isBrowser) {
-          queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
-        }
-      },
-    });
+      { threshold: 0.1 }
+    );
+
+    this.infiniteScrollObserver.observe(this.scrollTrigger.nativeElement);
+  }
+
+  private loadMoreImages(): void {
+    if (this.isLoadingMore || !this.hasMore) return;
+    this.isLoadingMore = true;
+    this.fetchImages(this.currentPage + 1);
+  }
+
+  private fetchImages(page: number = 1): void {
+    if (page === 1) {
+      this.loading = true;
+      this.error = false;
+      this.images = [];
+      this.currentPage = 1;
+    }
+
+    this.http
+      .get<{ ok: boolean; images: HomeImage[]; hasMore: boolean; total: number; page: number; limit: number }>(
+        `${environment.apiUrl}/home`,
+        { params: { page: page.toString(), limit: this.imageLimit.toString() } }
+      )
+      .subscribe({
+        next: (res) => {
+          this.images = this.images.concat(res.images);
+          this.hasMore = res.hasMore;
+          this.currentPage = res.page;
+          this.isLoadingMore = false;
+          this.loading = false;
+
+          if (this.isBrowser) {
+            queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
+          }
+        },
+        error: () => {
+          if (page === 1) {
+            this.error = true;
+            this.loading = false;
+          }
+          this.isLoadingMore = false;
+
+          if (this.isBrowser) {
+            queueMicrotask(() => setTimeout(() => this.observeRevealElements(), 0));
+          }
+        },
+      });
   }
 
   openFileDialog(): void {
@@ -350,5 +402,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   retry(): void {
     this.fetchImages();
+  }
+
+  onImageLoad(id: string): void {
+    this.loadedImages[id] = true;
   }
 }
