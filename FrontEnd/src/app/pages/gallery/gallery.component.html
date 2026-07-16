@@ -92,6 +92,7 @@
   [editEvent]="editTarget"
   mode="collection"
   [loading]="isSaving"
+  [serverError]="modalError"
   (closed)="onModalClosed()"
   (saved)="onModalSaved($event)"
 />

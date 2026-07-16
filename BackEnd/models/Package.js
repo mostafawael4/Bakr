@@ -8,6 +8,7 @@ const packageSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   photographers: { type: Number, default: 1 },
   includesMainPhotographer: { type: Boolean, default: true },
+  includesFilmRoll: { type: Boolean, default: false },
   order: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

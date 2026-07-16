@@ -38,7 +38,15 @@ router.post('/', requireAdminAuth, async (req, res, next) => {
   try {
     const { name, coverImage } = req.body;
     if (!name) {
-      return res.status(400).json({ ok: false, message: 'Collection name is required' });
+      return res.status(400).json({ ok: false, message: 'Collection name is required.' });
+    }
+    if (!coverImage) {
+      return res.status(400).json({ ok: false, message: 'Cover image is required.' });
+    }
+
+    const existingCollection = await GalleryCollection.findOne({ name: new RegExp('^' + name + '$', 'i') });
+    if (existingCollection) {
+      return res.status(400).json({ ok: false, message: 'A collection with this name already exists.' });
     }
 
     const collection = await GalleryCollection.create({ name, coverImage });
@@ -63,7 +71,16 @@ router.put('/:collectionId', requireAdminAuth, async (req, res, next) => {
     }
 
     const { name, coverImage } = req.body;
-    if (name !== undefined) collection.name = name;
+    if (name !== undefined) {
+      const existingCollection = await GalleryCollection.findOne({
+        name: new RegExp('^' + name + '$', 'i'),
+        _id: { $ne: req.params.collectionId }
+      });
+      if (existingCollection) {
+        return res.status(400).json({ ok: false, message: 'A collection with this name already exists.' });
+      }
+      collection.name = name;
+    }
 
     if (coverImage !== undefined) {
       // Delete old cover from B2 if exists

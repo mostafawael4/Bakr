@@ -64,6 +64,23 @@
                 <span>Lead Photographer Included</span>
               </div>
             }
+            @if (pkg.includesFilmRoll) {
+              <div class="detail-item film-roll-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="film-icon">
+                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                  <line x1="7" y1="2" x2="7" y2="22"/>
+                  <line x1="17" y1="2" x2="17" y2="22"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <line x1="2" y1="7" x2="7" y2="7"/>
+                  <line x1="2" y1="17" x2="7" y2="17"/>
+                  <line x1="17" y1="17" x2="22" y2="17"/>
+                  <line x1="17" y1="7" x2="22" y2="7"/>
+                </svg>
+                <span>
+                  With every package you book, you get a free <a href="javascript:void(0)" (click)="openFilmSourceModal()" class="film-link">film roll</a>.
+                </span>
+              </div>
+            }
           </div>
 
           <div class="card-body">
@@ -138,3 +155,51 @@
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
 />
+
+<!-- Film Source Choice Modal -->
+@if (showFilmSourceModal) {
+  <div class="modal-overlay film-choice-overlay" (click)="closeFilmSourceModal()">
+    <div class="modal-card film-choice-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Explore Film Samples</h2>
+        <button class="close-btn" (click)="closeFilmSourceModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body film-choice-body">
+        <p class="choice-intro">Choose how you would like to explore our film collection & stories:</p>
+        
+        <div class="choice-buttons">
+          <a [href]="instagramFilmUrl" target="_blank" (click)="closeFilmSourceModal()" class="choice-btn btn-instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="choice-icon"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            <div class="choice-text">
+              <span class="choice-title">Instagram Highlights</span>
+              <span class="choice-desc">View curated samples & reels on Instagram</span>
+            </div>
+            <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+
+          <a [routerLink]="filmCollectionId ? ['/gallery', filmCollectionId] : ['/gallery']" (click)="closeFilmSourceModal()" class="choice-btn btn-website">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="choice-icon">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="7" y2="7"/>
+              <line x1="2" y1="17" x2="7" y2="17"/>
+              <line x1="17" y1="17" x2="22" y2="17"/>
+              <line x1="17" y1="7" x2="22" y2="7"/>
+            </svg>
+            <div class="choice-text">
+              <span class="choice-title">Website Collections</span>
+              <span class="choice-desc">Explore full film gallery on this site</span>
+            </div>
+            <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,27 +1,33 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { PackageService, Package } from '../../services/package.service';
+import { GalleryService } from '../../services/gallery.service';
 import { PackageModalComponent } from '../../components/package-modal/package-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-packages',
   standalone: true,
-  imports: [CommonModule, PackageModalComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterLink, PackageModalComponent, ConfirmDialogComponent],
   templateUrl: './packages.component.html',
   styleUrls: ['./packages.component.scss'],
 })
 export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   private packageService = inject(PackageService);
+  private galleryService = inject(GalleryService);
   private platformId = inject(PLATFORM_ID);
 
   @ViewChildren('cardItem') cardItems!: QueryList<ElementRef>;
 
   packages: Package[] = [];
   loading = true;
+  filmCollectionId: string | null = null;
+  showFilmSourceModal = false;
+  instagramFilmUrl = 'https://www.instagram.com/s/aGlnaGxpZ2h0OjE4NDU2ODk4NTYxMDM3MDY5?igsh=MTliM2Vsd2Z0ZXdoMw==';
 
   showModal = false;
   editTarget: Package | null = null;
@@ -40,6 +46,7 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.fetchPackages();
+    this.fetchFilmCollectionId();
   }
 
   ngAfterViewInit(): void {
@@ -92,6 +99,21 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private fetchFilmCollectionId(): void {
+    this.galleryService.getCollections().subscribe({
+      next: (res) => {
+        const filmCol = res.collections.find(c =>
+          c.name.toLowerCase() === 'on film' ||
+          c.name.toLowerCase().includes('on film')
+        );
+        this.filmCollectionId = filmCol ? filmCol._id : null;
+      },
+      error: (err) => {
+        console.error('Failed to load gallery collections for film link:', err);
+      }
+    });
+  }
+
   private fetchPackages(): void {
     this.loading = true;
     this.packageService.getAll().subscribe({
@@ -104,6 +126,14 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loading = false;
       },
     });
+  }
+
+  openFilmSourceModal(): void {
+    this.showFilmSourceModal = true;
+  }
+
+  closeFilmSourceModal(): void {
+    this.showFilmSourceModal = false;
   }
 
   openCreate(): void {

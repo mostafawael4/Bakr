@@ -18,16 +18,23 @@
       }
 
       <form (ngSubmit)="submit()" class="modal-form">
+        @if (serverError) {
+          <div class="server-error-banner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ serverError }}
+          </div>
+        }
+
         <div class="form-group">
           <label for="eventName">{{ nameLabel }}</label>
-          <input id="eventName" type="text" [(ngModel)]="name" name="name" [placeholder]="namePlaceholder" required minlength="3" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!name.trim() || name.trim().length < 3)" />
+          <input id="eventName" type="text" [(ngModel)]="name" (ngModelChange)="onNameChange()" name="name" [placeholder]="namePlaceholder" required minlength="3" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!name.trim() || name.trim().length < 3)" />
           @if (hasAttemptedSubmit && !name.trim()) { <span class="error-text">Required field</span> }
           @else if (hasAttemptedSubmit && name.trim().length < 3) { <span class="error-text">Min 3 characters</span> }
         </div>
 
         <div class="form-group">
           <label>Cover / Background Image</label>
-          <div class="cover-upload" (click)="!loading && coverInput.click()" [style.opacity]="loading ? '0.6' : '1'" [style.cursor]="loading ? 'default' : 'pointer'">
+          <div class="cover-upload" (click)="!loading && coverInput.click()" [style.opacity]="loading ? '0.6' : '1'" [style.cursor]="loading ? 'default' : 'pointer'" [class.is-invalid]="hasAttemptedSubmit && !isEdit && !coverPreview">
             @if (coverPreview) {
               <img [src]="coverPreview" alt="Cover preview" class="cover-preview" />
               <span class="cover-change">Change</span>
@@ -40,6 +47,9 @@
               </div>
             }
           </div>
+          @if (hasAttemptedSubmit && !isEdit && !coverPreview) {
+            <span class="error-text">Cover image is required</span>
+          }
           <input #coverInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onCoverSelected($event)" [disabled]="loading" />
         </div>
 
