@@ -31,10 +31,11 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
   displayedImages: GalleryImage[] = [];
   masonryColumns: { images: GalleryImage[] }[] = [];
   columnCount = 4;
-  pageSize = 20;
+  pageSize = 16;
 
   loading = true;
   collectionId = '';
+  loadedImages: Record<string, boolean> = {};
 
   uploadState: UploadState = {
     visible: false,
@@ -76,8 +77,10 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     this.galleryService.getCollectionImages(this.collectionId).subscribe({
       next: (res) => {
         this.collection = res.collection;
+        this.collectionImages = res.images;
+        this.displayedImages = this.collectionImages.slice(0, this.pageSize);
+        this.rebuildMasonry();
         this.loading = false;
-        this.fetchCollectionImages();
       },
       error: () => {
         this.loading = false;
@@ -221,6 +224,10 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
   @HostListener('window:resize')
   onResize(): void {
     this.calculateColumnCount();
+  }
+
+  onImageLoad(id: string): void {
+    this.loadedImages[id] = true;
   }
 
   @HostListener('window:scroll', [])
