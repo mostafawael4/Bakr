@@ -80,6 +80,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   lightboxOpen = false;
   lightboxStart = 0;
 
+  heroImageLoaded = false;
+  loadedFolders = new Set<string>();
+  loadedImages = new Set<string>();
+
   heroFocalEditMode = false;
   savingHeroFocal = false;
 
@@ -198,6 +202,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   private fetchEventDetails(): void {
     this.loading = true;
+    this.heroImageLoaded = false;
+    this.loadedFolders.clear();
+    this.loadedImages.clear();
     // Admin uses the admin folders endpoint; client uses details endpoint
     if (this.isAdmin) {
       this.clientEventService.getEvents().subscribe({
@@ -259,6 +266,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.folderCoverImageId = null;
     this.images = [];
     this.displayedImages = [];
+    this.masonryColumns = [];
+    this.heroImageLoaded = false;
+    this.loadedFolders.clear();
+    this.loadedImages.clear();
     this.rebuildMasonry();
     // Refresh folders
     if (this.isAdmin) {
@@ -628,5 +639,25 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     const processingPercent = Math.round((totalScore / maxScore) * 60);
     const equivalentCurrent = Math.floor((totalScore / maxScore) * total);
     return { percent: 40 + processingPercent, equivalentCurrent };
+  }
+
+  onHeroImageLoad(): void {
+    this.heroImageLoaded = true;
+  }
+
+  onFolderCoverLoad(key: string): void {
+    this.loadedFolders.add(key);
+  }
+
+  isFolderCoverLoaded(key: string): boolean {
+    return this.loadedFolders.has(key);
+  }
+
+  onImageLoad(id: string): void {
+    this.loadedImages.add(id);
+  }
+
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
   }
 }
