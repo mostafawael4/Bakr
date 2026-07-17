@@ -153,7 +153,9 @@ export class FeedbacksComponent implements OnInit, AfterViewInit, OnDestroy {
       message: this.formMessage.trim(),
     }).subscribe({
       next: (res) => {
-        this.feedbacks.unshift(res.feedback);
+        if (this.authService.isLoggedIn) {
+          this.feedbacks.unshift(res.feedback);
+        }
         this.resetForm();
         this.submitting = false;
         this.submitSuccess = true;
@@ -163,6 +165,21 @@ export class FeedbacksComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: () => {
         this.submitting = false;
+      },
+    });
+  }
+
+  approveFeedback(fb: Feedback): void {
+    this.feedbackService.updateStatus(fb._id, 'approved').subscribe({
+      next: (res) => {
+        const index = this.feedbacks.findIndex(f => f._id === fb._id);
+        if (index > -1) {
+          this.feedbacks[index] = res.feedback;
+          this.scheduleObserve();
+        }
+      },
+      error: (err) => {
+        console.error('Failed to approve feedback:', err);
       },
     });
   }

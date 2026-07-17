@@ -14,14 +14,22 @@
 }
 
 @if (!loading && event) {
-<!-- Hero Header -->
 <div
   class="event-hero"
   [class.editing-focal]="heroFocalEditMode"
-  [style.background-image]="event.backgroundImage ? 'url(' + getFullUrl(event.backgroundImage) + ')' : 'none'"
-  [style.backgroundPosition]="getHeroPosition()"
   (click)="onHeroFocalClick($event)"
 >
+  @if (event.backgroundImage) {
+    <div class="hero-bg-container" [class.loading]="!heroImageLoaded">
+      <img
+        [src]="getFullUrl(event.backgroundImage)"
+        alt="Event background cover"
+        (load)="onHeroImageLoad()"
+        [class.loaded]="heroImageLoaded"
+        [style.objectPosition]="getHeroPosition()"
+      />
+    </div>
+  }
   @if (isAdmin && event.backgroundImage) {
     <button
       type="button"
@@ -67,15 +75,27 @@
 
   <!-- New Folder Input -->
   @if (showFolderInput) {
-  <div class="folder-input-row">
-    <input type="text" [(ngModel)]="newFolderName" placeholder="e.g. Ceremony, Reception..."
-      (keyup.enter)="createFolder()" class="folder-name-input" />
-    <button class="btn-create-folder" (click)="createFolder()">
-      Create &amp; Upload
-    </button>
-    <button class="btn-cancel-folder" (click)="toggleFolderInput()">
-      Cancel
-    </button>
+  <div class="folder-input-wrapper">
+    <div class="folder-input-row">
+      <input
+        type="text"
+        [(ngModel)]="newFolderName"
+        placeholder="e.g. Ceremony, Reception..."
+        (keyup.enter)="createFolder()"
+        class="folder-name-input"
+        [class.has-error]="folderError"
+        (ngModelChange)="folderError = null"
+      />
+      <button class="btn-create-folder" (click)="createFolder()">
+        Create &amp; Upload
+      </button>
+      <button class="btn-cancel-folder" (click)="toggleFolderInput()">
+        Cancel
+      </button>
+    </div>
+    @if (folderError) {
+      <p class="folder-error-msg">{{ folderError }}</p>
+    }
   </div>
   }
 
@@ -84,9 +104,14 @@
   <div class="folders-grid">
     @for (folder of folders; track folder.key) {
     <div class="folder-card" (click)="openFolder(folder)">
-      <div class="folder-cover">
+      <div class="folder-cover" [class.loading]="folder.coverImage && !isFolderCoverLoaded(folder.key)">
         @if (folder.coverImage) {
-        <img [src]="getFullUrl(folder.coverImage)" [alt]="folder.key" />
+        <img
+          [src]="getFullUrl(folder.coverImage)"
+          [alt]="folder.key"
+          (load)="onFolderCoverLoad(folder.key)"
+          [class.loaded]="isFolderCoverLoaded(folder.key)"
+        />
         } @else {
         <div class="folder-cover-placeholder">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
@@ -174,8 +199,16 @@
       <div class="masonry-column">
         @for (image of column.images; track image._id) {
         <div class="image-item" [class.is-cover]="isAdmin && isFolderCover(image)" (click)="openLightbox(image)">
-          <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)" sizes="(max-width:768px) 50vw,
-                           (max-width:1280px) 33vw, 25vw" [alt]="image.originalName" loading="lazy" />
+          <div class="image-skeleton" [class.is-loaded]="isImageLoaded(image._id)">
+            <img
+              [src]="getFullUrl(image.medium || image.url)"
+              [srcset]="getSrcset(image)"
+              sizes="(max-width:768px) 50vw, (max-width:1280px) 33vw, 25vw"
+              [alt]="image.originalName"
+              loading="lazy"
+              (load)="onImageLoad(image._id)"
+            />
+          </div>
           <!-- Download button (always visible) -->
           <button class="img-download-btn" (click)="downloadSingleImage(image, $event)" title="Download image">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"

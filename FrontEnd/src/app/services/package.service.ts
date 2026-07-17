@@ -12,6 +12,7 @@ export interface Package {
   description: string;
   photographers: number;
   includesMainPhotographer: boolean;
+  includesFilmRoll?: boolean;
   order: number;
 }
 

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const galleryImageSchema = new mongoose.Schema({
-  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'GalleryEvent', required: true },
+  collectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'GalleryCollection', default: null },
   filename: { type: String, required: true },
   originalName: { type: String, required: true },
   url: { type: String, required: true },

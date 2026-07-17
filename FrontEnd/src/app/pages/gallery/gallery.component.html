@@ -43,9 +43,14 @@
           [style.--delay]="(i % 6) * 0.12 + 's'"
         >
           <!-- Image -->
-          <div class="card-image">
+          <div class="card-image" [class.loading]="collection.coverImage && !isImageLoaded(collection._id)">
             @if (collection.coverImage) {
-              <img [src]="getCoverUrl(collection.coverImage)" [alt]="collection.name" />
+              <img
+                [src]="getCoverUrl(collection.coverImage)"
+                [alt]="collection.name"
+                (load)="onImageLoad(collection._id)"
+                [class.loaded]="isImageLoaded(collection._id)"
+              />
             } @else {
               <div class="card-image-placeholder">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -92,6 +97,7 @@
   [editEvent]="editTarget"
   mode="collection"
   [loading]="isSaving"
+  [serverError]="modalError"
   (closed)="onModalClosed()"
   (saved)="onModalSaved($event)"
 />

@@ -43,9 +43,12 @@
   </header>
   <div class="portfolio-grid">
     @for (image of images; track image._id; let i = $index) {
-    <div class="grid-item" [style.--delay]="(i % 8) * 0.1 + 's'" (click)="openLightbox(i)">
-      <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)"
-        sizes="(max-width: 768px) 100vw, 50vw" [alt]="image.originalName" loading="lazy" />
+    <div class="grid-item scroll-reveal" #scrollReveal [style.--delay]="(i % 8) * 0.1 + 's'" (click)="openLightbox(i)">
+      <div class="image-skeleton" [class.is-loaded]="loadedImages[image._id]">
+        <img [src]="getFullUrl(image.medium || image.url)" [srcset]="getSrcset(image)"
+          sizes="(max-width: 768px) 100vw, 50vw" [alt]="image.originalName" loading="lazy" 
+          (load)="onImageLoad(image._id)" />
+      </div>
       @if (authService.isLoggedIn) {
       <button type="button" class="delete-btn" (click)="askDelete(image); $event.stopPropagation()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -58,6 +61,16 @@
     </div>
     }
   </div>
+
+  <!-- Infinite scroll trigger -->
+  <div class="infinite-scroll-trigger" #scrollTrigger></div>
+
+  <!-- Loading spinner for next batch -->
+  @if (isLoadingMore) {
+  <div class="infinite-scroll-loader">
+    <div class="infinite-scroll-spinner"></div>
+  </div>
+  }
 </section>
 }
 

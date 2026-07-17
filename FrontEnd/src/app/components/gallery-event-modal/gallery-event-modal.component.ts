@@ -18,6 +18,7 @@ export class GalleryEventModalComponent implements OnChanges {
   @Input() loading = false;
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<FormData>();
+  @Input() serverError: string | null = null;
 
   name = '';
   coverFile: File | null = null;
@@ -55,6 +56,11 @@ export class GalleryEventModalComponent implements OnChanges {
     if (!input.files || input.files.length === 0) return;
     this.coverFile = input.files[0];
     this.coverPreview = URL.createObjectURL(this.coverFile);
+    this.serverError = null; // Clear error on change
+  }
+
+  onNameChange(): void {
+    this.serverError = null; // Clear error on change
   }
 
   close(): void {
@@ -63,8 +69,14 @@ export class GalleryEventModalComponent implements OnChanges {
 
   submit(): void {
     this.hasAttemptedSubmit = true;
+    this.serverError = null;
 
     if (!this.name.trim() || this.name.trim().length < 3) return;
+    
+    // Require cover image for new creations
+    if (!this.isEdit && !this.coverPreview) {
+      return;
+    }
 
     const formData = new FormData();
     formData.append('name', this.name.trim());

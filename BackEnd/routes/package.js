@@ -28,7 +28,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', requireAdminAuth, async (req, res, next) => {
   try {
-    const { name, hours, price, currency, description, photographers, includesMainPhotographer, order } = req.body;
+    const { name, hours, price, currency, description, photographers, includesMainPhotographer, includesFilmRoll, order } = req.body;
 
     if (!name || !hours || !price) {
       return res.status(400).json({ ok: false, message: 'Name, hours, and price are required' });
@@ -42,6 +42,7 @@ router.post('/', requireAdminAuth, async (req, res, next) => {
       description: description || '',
       photographers: photographers || 1,
       includesMainPhotographer: includesMainPhotographer !== false,
+      includesFilmRoll: includesFilmRoll === true,
       order: order || 0,
     });
 
@@ -58,7 +59,7 @@ router.put('/:id', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Package not found' });
     }
 
-    const { name, hours, price, currency, description, photographers, includesMainPhotographer, order } = req.body;
+    const { name, hours, price, currency, description, photographers, includesMainPhotographer, includesFilmRoll, order } = req.body;
 
     if (name !== undefined) pkg.name = name;
     if (hours !== undefined) pkg.hours = hours;
@@ -67,6 +68,7 @@ router.put('/:id', requireAdminAuth, async (req, res, next) => {
     if (description !== undefined) pkg.description = description;
     if (photographers !== undefined) pkg.photographers = photographers;
     if (includesMainPhotographer !== undefined) pkg.includesMainPhotographer = includesMainPhotographer;
+    if (includesFilmRoll !== undefined) pkg.includesFilmRoll = includesFilmRoll;
     if (order !== undefined) pkg.order = order;
 
     await pkg.save();

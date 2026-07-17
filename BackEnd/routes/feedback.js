@@ -4,10 +4,20 @@ import { requireAdminAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET all feedbacks (public) — newest first
+// GET all feedbacks — newest first
+// If admin is logged in, return all. Otherwise, only return approved or legacy (no status) feedbacks.
 router.get('/', async (req, res, next) => {
   try {
-    const feedbacks = await Feedback.find().sort({ createdAt: -1 }).lean();
+    const isAdmin = !!(req.session && req.session.adminId);
+    const query = isAdmin
+      ? {}
+      : {
+          $or: [
+            { status: 'approved' },
+            { status: { $exists: false } },
+          ],
+        };
+    const feedbacks = await Feedback.find(query).sort({ createdAt: -1 }).lean();
     res.json({ ok: true, feedbacks });
   } catch (err) {
     next(err);
@@ -33,6 +43,30 @@ router.post('/', async (req, res, next) => {
 
     const feedback = await Feedback.create({ name, email, rating, message });
     res.status(201).json({ ok: true, feedback });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH update feedback status (admin only)
+router.patch('/:id/status', requireAdminAuth, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ ok: false, message: 'Invalid status' });
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!feedback) {
+      return res.status(404).json({ ok: false, message: 'Feedback not found' });
+    }
+
+    res.json({ ok: true, feedback });
   } catch (err) {
     next(err);
   }

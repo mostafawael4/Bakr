@@ -9,6 +9,7 @@ export interface Feedback {
   email?: string;
   rating: number;
   message: string;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
 }
 
@@ -18,11 +19,15 @@ export class FeedbackService {
   private url = `${environment.apiUrl}/feedbacks`;
 
   getAll(): Observable<{ ok: boolean; feedbacks: Feedback[] }> {
-    return this.http.get<{ ok: boolean; feedbacks: Feedback[] }>(this.url);
+    return this.http.get<{ ok: boolean; feedbacks: Feedback[] }>(this.url, { withCredentials: true });
   }
 
   create(data: { name: string; email?: string; rating: number; message: string }): Observable<{ ok: boolean; feedback: Feedback }> {
     return this.http.post<{ ok: boolean; feedback: Feedback }>(this.url, data);
+  }
+
+  updateStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Observable<{ ok: boolean; feedback: Feedback }> {
+    return this.http.patch<{ ok: boolean; feedback: Feedback }>(`${this.url}/${id}/status`, { status }, { withCredentials: true });
   }
 
   delete(id: string): Observable<{ ok: boolean; message: string }> {

@@ -26,14 +26,24 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   collections: GalleryCollection[] = [];
   loading = true;
+  loadedImages = new Set<string>();
 
   showModal = false;
   editTarget: GalleryCollection | null = null;
   isSaving = false;
+  modalError: string | null = null;
 
   deleteTarget: GalleryCollection | null = null;
   showDeleteDialog = false;
   isDeleting = false;
+
+  onImageLoad(id: string): void {
+    this.loadedImages.add(id);
+  }
+
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
+  }
 
   private observer: IntersectionObserver | null = null;
   private cardSub: Subscription | null = null;
@@ -111,6 +121,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openCreate(): void {
     this.editTarget = null;
+    this.modalError = null;
     this.showModal = true;
   }
 
@@ -118,42 +129,53 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     e.stopPropagation();
     e.preventDefault();
     this.editTarget = collection;
+    this.modalError = null;
     this.showModal = true;
   }
 
   onModalClosed(): void {
     this.showModal = false;
     this.editTarget = null;
+    this.modalError = null;
   }
 
   async onModalSaved(formData: FormData): Promise<void> {
     this.isSaving = true;
+    this.modalError = null;
     const name = formData.get('name') as string;
     const coverFile = formData.get('cover') as File;
 
-    let coverImageKey: string | null = this.editTarget ? (this.editTarget.coverImage ? this.editTarget.coverImage : null) : null;
+    let coverImageKey: string | null = null;
+    let hasCoverChange = false;
 
     if (coverFile) {
+      hasCoverChange = true;
       try {
         const result = await this.b2UploadService.uploadImage(coverFile, 'collections');
         coverImageKey = result.thumbnail || result.medium || result.url;
       } catch (err) {
         console.error('Failed to upload collection cover image to B2:', err);
         this.isSaving = false;
+        this.modalError = 'Failed to upload cover image. Please try again.';
         return;
       }
     }
 
     if (this.editTarget) {
-      this.galleryService.updateCollection(this.editTarget._id, { name, coverImage: coverImageKey }).subscribe({
+      const payload: { name?: string; coverImage?: string | null } = { name };
+      if (hasCoverChange) {
+        payload.coverImage = coverImageKey;
+      }
+      this.galleryService.updateCollection(this.editTarget._id, payload).subscribe({
         next: () => {
           this.showModal = false;
           this.editTarget = null;
           this.isSaving = false;
           this.fetchCollections();
         },
-        error: () => {
+        error: (err) => {
           this.isSaving = false;
+          this.modalError = err.error?.message || 'Failed to update collection.';
         }
       });
     } else {
@@ -163,8 +185,9 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isSaving = false;
           this.fetchCollections();
         },
-        error: () => {
+        error: (err) => {
           this.isSaving = false;
+          this.modalError = err.error?.message || 'Failed to create collection.';
         }
       });
     }

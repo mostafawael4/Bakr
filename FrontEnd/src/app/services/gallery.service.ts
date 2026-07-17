@@ -9,6 +9,7 @@ export interface GalleryCollection {
   coverImage: string | null;
   createdAt: string;
   eventCount?: number;
+  imageCount?: number;
 }
 
 export interface GalleryEvent {
@@ -22,7 +23,7 @@ export interface GalleryEvent {
 
 export interface GalleryImage {
   _id: string;
-  eventId: string;
+  collectionId?: string;
   filename: string;
   originalName: string;
   url: string;
@@ -80,6 +81,18 @@ export class GalleryService {
   }
 
   /* ── Images ── */
+
+  getCollectionImages(collectionId: string): Observable<{ ok: boolean; collection: GalleryCollection; images: GalleryImage[] }> {
+    return this.http.get<{ ok: boolean; collection: GalleryCollection; images: GalleryImage[] }>(`${this.url}/${collectionId}/images`);
+  }
+
+  uploadCollectionImages(collectionId: string, images: any[]): Observable<{ ok: boolean; images: GalleryImage[] }> {
+    return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/${collectionId}/images`, { images }, { withCredentials: true });
+  }
+
+  deleteCollectionImage(collectionId: string, imageId: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.delete<{ ok: boolean; message: string }>(`${this.url}/${collectionId}/images/${imageId}`, { withCredentials: true });
+  }
 
   uploadImages(eventId: string, images: any[]): Observable<{ ok: boolean; images: GalleryImage[] }> {
     return this.http.post<{ ok: boolean; images: GalleryImage[] }>(`${this.url}/events/${eventId}/images`, { images }, { 

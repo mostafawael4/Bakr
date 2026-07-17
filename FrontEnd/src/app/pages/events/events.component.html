@@ -43,9 +43,14 @@
       @for (event of events; track event._id) {
         <div class="event-card" (click)="openEventAdmin(event)">
           <!-- Background Preview -->
-          <div class="card-bg">
+          <div class="card-bg" [class.loading]="event.backgroundImage && !isImageLoaded(event._id)">
             @if (event.backgroundImage) {
-              <img [src]="getBackgroundUrl(event.backgroundImage)" alt="Event background" />
+              <img
+                [src]="getBackgroundUrl(event.backgroundImage)"
+                alt="Event background"
+                (load)="onImageLoad(event._id)"
+                [class.loaded]="isImageLoaded(event._id)"
+              />
             } @else {
               <div class="card-bg-placeholder">
                 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">

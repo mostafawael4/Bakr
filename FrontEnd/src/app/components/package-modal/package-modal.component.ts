@@ -27,6 +27,7 @@ export class PackageModalComponent implements OnChanges {
     description: '',
     photographers: 1,
     includesMainPhotographer: true,
+    includesFilmRoll: false,
     order: 0,
   };
 
@@ -45,6 +46,7 @@ export class PackageModalComponent implements OnChanges {
         description: this.editPackage.description,
         photographers: this.editPackage.photographers,
         includesMainPhotographer: this.editPackage.includesMainPhotographer,
+        includesFilmRoll: this.editPackage.includesFilmRoll || false,
         order: this.editPackage.order,
       };
     } else {
@@ -77,6 +79,7 @@ export class PackageModalComponent implements OnChanges {
       description: '',
       photographers: 1,
       includesMainPhotographer: true,
+      includesFilmRoll: false,
       order: 0,
     };
     this.hasAttemptedSubmit = false;

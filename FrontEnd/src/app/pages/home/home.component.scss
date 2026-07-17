@@ -490,16 +490,7 @@
   border-radius: 4px;
   background-color: transparent;
   cursor: pointer;
-
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 1s ease, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
   transition-delay: var(--delay, 0s);
-
-  .home-gallery.scroll-reveal--visible & {
-    opacity: 1;
-    transform: translateY(0);
-  }
 
   // Vertical rhythm: Offset second column for an elegant staggered look
   &:nth-child(even) {
@@ -507,14 +498,48 @@
     @media (max-width: 640px) { margin-top: 0; }
   }
 
-  img {
-    display: block;
+  .image-skeleton {
+    position: relative;
     width: 100%;
-    height: auto;
-    transition: opacity 0.5s ease;
+    min-height: 250px;
+    background-color: rgba(58, 52, 44, 0.05);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 1.8s infinite;
+      z-index: 2;
+    }
+
+    &.is-loaded {
+      min-height: auto;
+      background-color: transparent;
+
+      &::after {
+        display: none;
+        animation: none;
+      }
+
+      img {
+        opacity: 1;
+      }
+    }
+
+    img {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      display: block;
+      width: 100%;
+      height: auto;
+      position: relative;
+      z-index: 1;
+    }
   }
 
-  &:hover img {
+  &:hover .image-skeleton.is-loaded img {
     opacity: 0.75;
   }
 
@@ -637,4 +662,36 @@
   &:hover {
     background-color: var(--color-interactive-hover);
   }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+// Infinite scroll trigger and loader
+.infinite-scroll-trigger {
+  height: 1px;
+  visibility: hidden;
+  pointer-events: none;
+  margin-top: 2rem;
+}
+
+.infinite-scroll-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+  margin-top: 2rem;
+}
+
+.infinite-scroll-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(58, 52, 44, 0.12);
+  border-top-color: var(--color-interactive);
+  border-right-color: var(--color-interactive);
+  animation: spin 0.8s linear infinite;
 }

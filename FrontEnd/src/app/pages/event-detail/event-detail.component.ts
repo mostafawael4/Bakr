@@ -54,6 +54,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   // Create folder
   showFolderInput = false;
   newFolderName = '';
+  folderError: string | null = null;
 
   // Upload
   uploadState: UploadState = {
@@ -79,6 +80,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   // Lightbox
   lightboxOpen = false;
   lightboxStart = 0;
+
+  heroImageLoaded = false;
+  loadedFolders = new Set<string>();
+  loadedImages = new Set<string>();
 
   heroFocalEditMode = false;
   savingHeroFocal = false;
@@ -198,6 +203,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   private fetchEventDetails(): void {
     this.loading = true;
+    this.heroImageLoaded = false;
+    this.loadedFolders.clear();
+    this.loadedImages.clear();
     // Admin uses the admin folders endpoint; client uses details endpoint
     if (this.isAdmin) {
       this.clientEventService.getEvents().subscribe({
@@ -259,6 +267,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.folderCoverImageId = null;
     this.images = [];
     this.displayedImages = [];
+    this.masonryColumns = [];
+    this.heroImageLoaded = false;
+    this.loadedFolders.clear();
+    this.loadedImages.clear();
     this.rebuildMasonry();
     // Refresh folders
     if (this.isAdmin) {
@@ -287,15 +299,27 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   toggleFolderInput(): void {
     this.showFolderInput = !this.showFolderInput;
     this.newFolderName = '';
+    this.folderError = null;
   }
 
   createFolder(): void {
-    if (!this.newFolderName.trim()) return;
+    const folderName = this.newFolderName.trim();
+    if (!folderName) return;
+
+    const exists = this.folders.some(
+      (f) => f.key.toLowerCase() === folderName.toLowerCase()
+    );
+    if (exists) {
+      this.folderError = 'A folder with this name already exists.';
+      return;
+    }
+    this.folderError = null;
+
     // Creating a folder is just tagging — we create a placeholder by uploading
     // But since folders are derived from images, we just set the selectedFolder
     // and let the admin upload images to it.
     // For now, just open the upload flow with the new folder name
-    this.selectedFolder = this.newFolderName.trim();
+    this.selectedFolder = folderName;
     this.currentView = 'images';
     this.images = [];
     this.displayedImages = [];
@@ -628,5 +652,25 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     const processingPercent = Math.round((totalScore / maxScore) * 60);
     const equivalentCurrent = Math.floor((totalScore / maxScore) * total);
     return { percent: 40 + processingPercent, equivalentCurrent };
+  }
+
+  onHeroImageLoad(): void {
+    this.heroImageLoaded = true;
+  }
+
+  onFolderCoverLoad(key: string): void {
+    this.loadedFolders.add(key);
+  }
+
+  isFolderCoverLoaded(key: string): boolean {
+    return this.loadedFolders.has(key);
+  }
+
+  onImageLoad(id: string): void {
+    this.loadedImages.add(id);
+  }
+
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
   }
 }
