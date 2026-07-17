@@ -12,33 +12,35 @@
 
     <ul class="nav-links" [class.open]="menuOpen">
       <li>
-        <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
+        <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeMenu()">Home</a>
       </li>
+      @if (authService.isLoggedIn) {
       <li>
         <a routerLink="/packages" routerLinkActive="active" (click)="closeMenu()">Packages</a>
       </li>
+      }
       <li>
         <a routerLink="/gallery" routerLinkActive="active" (click)="closeMenu()">Gallery</a>
       </li>
       @if (authService.isLoggedIn) {
-        <li>
-          <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
-        </li>
-        <li>
-          <a href="javascript:void(0)" (click)="openChangePassword(); closeMenu()">Change Password</a>
-        </li>
+      <li>
+        <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
+      </li>
+      <li>
+        <a href="javascript:void(0)" (click)="openChangePassword(); closeMenu()">Change Password</a>
+      </li>
       }
       <li>
         <a routerLink="/feedbacks" routerLinkActive="active" (click)="closeMenu()">Feedbacks</a>
       </li>
       @if (authService.isLoggedIn) {
-        <li class="logout-item">
-          <button class="logout-btn" (click)="logout()">Logout</button>
-        </li>
+      <li class="logout-item">
+        <button class="logout-btn" (click)="logout()">Logout</button>
+      </li>
       }
     </ul>
   </div>
 </nav>
 
 <app-change-password-modal [visible]="showChangePasswordModal" (closed)="onPasswordModalClosed()" />
-
