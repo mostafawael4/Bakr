@@ -144,16 +144,29 @@
 .card-image {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border-radius: 4px;
   background-color: var(--color-page);
   box-shadow: 0 4px 24px rgba(42, 37, 32, 0.08);
 
+  &.loading {
+    background: linear-gradient(90deg, var(--color-border) 25%, var(--color-surface) 50%, var(--color-border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
+
   img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
     display: block;
-    transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+    transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s ease-in-out;
+
+    &.loaded {
+      opacity: 1;
+    }
   }
 
   .card-image-placeholder {
@@ -163,6 +176,15 @@
     align-items: center;
     justify-content: center;
     color: var(--color-border);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 

@@ -26,6 +26,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   collections: GalleryCollection[] = [];
   loading = true;
+  loadedImages = new Set<string>();
 
   showModal = false;
   editTarget: GalleryCollection | null = null;
@@ -35,6 +36,14 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   deleteTarget: GalleryCollection | null = null;
   showDeleteDialog = false;
   isDeleting = false;
+
+  onImageLoad(id: string): void {
+    this.loadedImages.add(id);
+  }
+
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
+  }
 
   private observer: IntersectionObserver | null = null;
   private cardSub: Subscription | null = null;
