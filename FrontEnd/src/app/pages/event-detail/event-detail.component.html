@@ -75,15 +75,27 @@
 
   <!-- New Folder Input -->
   @if (showFolderInput) {
-  <div class="folder-input-row">
-    <input type="text" [(ngModel)]="newFolderName" placeholder="e.g. Ceremony, Reception..."
-      (keyup.enter)="createFolder()" class="folder-name-input" />
-    <button class="btn-create-folder" (click)="createFolder()">
-      Create &amp; Upload
-    </button>
-    <button class="btn-cancel-folder" (click)="toggleFolderInput()">
-      Cancel
-    </button>
+  <div class="folder-input-wrapper">
+    <div class="folder-input-row">
+      <input
+        type="text"
+        [(ngModel)]="newFolderName"
+        placeholder="e.g. Ceremony, Reception..."
+        (keyup.enter)="createFolder()"
+        class="folder-name-input"
+        [class.has-error]="folderError"
+        (ngModelChange)="folderError = null"
+      />
+      <button class="btn-create-folder" (click)="createFolder()">
+        Create &amp; Upload
+      </button>
+      <button class="btn-cancel-folder" (click)="toggleFolderInput()">
+        Cancel
+      </button>
+    </div>
+    @if (folderError) {
+      <p class="folder-error-msg">{{ folderError }}</p>
+    }
   </div>
   }
 

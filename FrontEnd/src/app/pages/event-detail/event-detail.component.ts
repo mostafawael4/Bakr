@@ -54,6 +54,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   // Create folder
   showFolderInput = false;
   newFolderName = '';
+  folderError: string | null = null;
 
   // Upload
   uploadState: UploadState = {
@@ -298,15 +299,27 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   toggleFolderInput(): void {
     this.showFolderInput = !this.showFolderInput;
     this.newFolderName = '';
+    this.folderError = null;
   }
 
   createFolder(): void {
-    if (!this.newFolderName.trim()) return;
+    const folderName = this.newFolderName.trim();
+    if (!folderName) return;
+
+    const exists = this.folders.some(
+      (f) => f.key.toLowerCase() === folderName.toLowerCase()
+    );
+    if (exists) {
+      this.folderError = 'A folder with this name already exists.';
+      return;
+    }
+    this.folderError = null;
+
     // Creating a folder is just tagging — we create a placeholder by uploading
     // But since folders are derived from images, we just set the selectedFolder
     // and let the admin upload images to it.
     // For now, just open the upload flow with the new folder name
-    this.selectedFolder = this.newFolderName.trim();
+    this.selectedFolder = folderName;
     this.currentView = 'images';
     this.images = [];
     this.displayedImages = [];
