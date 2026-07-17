@@ -33,6 +33,7 @@ export class EventsComponent implements OnInit {
   isDeleting = false;
 
   copiedId: string | null = null;
+  loadedImages = new Set<string>();
 
   ngOnInit(): void {
     this.fetchEvents();
@@ -182,5 +183,13 @@ export class EventsComponent implements OnInit {
     if (!bg) return '';
     if (bg.startsWith('http')) return bg;
     return `${environment.apiUrl.replace('/api', '')}${bg}`;
+  }
+
+  onImageLoad(id: string): void {
+    this.loadedImages.add(id);
+  }
+
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
   }
 }
