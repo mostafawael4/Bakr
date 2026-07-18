@@ -81,8 +81,8 @@
           <div class="card-info">
             <span class="card-label">View Collection</span>
             <h2 class="card-name">{{ collection.name }}</h2>
-            @if (collection.eventCount) {
-              <p class="card-count">{{ collection.eventCount }} event{{ collection.eventCount > 1 ? 's' : '' }}</p>
+            @if (collection.imageCount) {
+              <p class="card-count">{{ collection.imageCount }} photo{{ collection.imageCount > 1 ? 's' : '' }}</p>
             }
           </div>
         </a>
@@ -92,10 +92,9 @@
 </section>
 
 <!-- Collection Modal -->
-<app-gallery-event-modal
+<app-collection-modal
   [visible]="showModal"
-  [editEvent]="editTarget"
-  mode="collection"
+  [editCollection]="editTarget"
   [loading]="isSaving"
   [serverError]="modalError"
   (closed)="onModalClosed()"
@@ -107,7 +106,7 @@
   [visible]="showDeleteDialog"
   [loading]="isDeleting"
   title="Delete Collection"
-  [message]="'Delete \'' + (deleteTarget?.name || '') + '\' and all its events and photos? This cannot be undone.'"
+  [message]="'Delete \'' + (deleteTarget?.name || '') + '\' and all its photos? This cannot be undone.'"
   confirmText="Delete"
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"

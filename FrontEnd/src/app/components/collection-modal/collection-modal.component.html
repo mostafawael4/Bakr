@@ -2,7 +2,7 @@
   <div class="modal-overlay" (click)="!loading && close()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit' : 'Create' }} {{ entityLabel }}</h2>
+        <h2>{{ isEdit ? 'Edit' : 'Create' }} Collection</h2>
         <button class="close-btn" (click)="close()" [disabled]="loading">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -13,7 +13,7 @@
       @if (loading) {
         <div class="modal-loading-overlay">
           <div class="creative-spinner"></div>
-          <p>{{ isEdit ? 'Updating' : 'Creating' }} {{ entityLabel }}...</p>
+          <p>{{ isEdit ? 'Updating' : 'Creating' }} Collection...</p>
         </div>
       }
 
@@ -26,8 +26,8 @@
         }
 
         <div class="form-group">
-          <label for="eventName">{{ nameLabel }}</label>
-          <input id="eventName" type="text" [(ngModel)]="name" (ngModelChange)="onNameChange()" name="name" [placeholder]="namePlaceholder" required minlength="3" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!name.trim() || name.trim().length < 3)" />
+          <label for="collectionName">Collection Name</label>
+          <input id="collectionName" type="text" [(ngModel)]="name" (ngModelChange)="onNameChange()" name="name" placeholder="e.g. Wedding, Films" required minlength="3" [disabled]="loading" [class.is-invalid]="hasAttemptedSubmit && (!name.trim() || name.trim().length < 3)" />
           @if (hasAttemptedSubmit && !name.trim()) { <span class="error-text">Required field</span> }
           @else if (hasAttemptedSubmit && name.trim().length < 3) { <span class="error-text">Min 3 characters</span> }
         </div>

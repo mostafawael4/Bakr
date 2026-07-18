@@ -57,7 +57,8 @@ function parseFocal(value, fallback = 50) {
 }
 
 async function publicEventPayload(event) {
-  const bgImage = event.backgroundImage ? await getPresignedDownloadUrl(event.backgroundImage) : null;
+  const displayKey = event.backgroundMedium || event.backgroundThumbnail || event.backgroundImage;
+  const bgImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
   return {
     _id: event._id,
     brideName: event.brideName,
@@ -95,8 +96,11 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
         const folders = await ClientEventImage.distinct('folderKey', { eventId: ev._id });
         
         const backgroundImageKey = ev.backgroundImage || null;
-        if (ev.backgroundImage) {
-          ev.backgroundImage = await getPresignedDownloadUrl(ev.backgroundImage);
+        const displayKey = ev.backgroundMedium || ev.backgroundThumbnail || ev.backgroundImage;
+        if (displayKey) {
+          ev.backgroundImage = await getPresignedDownloadUrl(displayKey);
+        } else {
+          ev.backgroundImage = null;
         }
 
         return { ...ev, backgroundImageKey, imageCount, folderCount: folders.length };
@@ -112,24 +116,33 @@ router.get('/', requireAdminAuth, async (req, res, next) => {
 // POST create client event (admin)
 router.post('/', requireAdminAuth, async (req, res, next) => {
   try {
-    const { brideName, groomName, password, backgroundImage, heroFocalX, heroFocalY } = req.body;
+    const { brideName, groomName, password, backgroundImage, backgroundThumbnail, backgroundMedium, backgroundHero, heroFocalX, heroFocalY } = req.body;
 
     if (!brideName || !groomName || !password) {
       return res.status(400).json({ ok: false, message: 'Bride name, groom name, and password are required' });
+    }
+    if (!backgroundImage) {
+      return res.status(400).json({ ok: false, message: 'Background image is required for new events' });
     }
 
     const event = await ClientEvent.create({
       brideName,
       groomName,
       password,
-      backgroundImage, // This is the B2 key path
+      backgroundImage, // original B2 key
+      backgroundThumbnail: backgroundThumbnail || null,
+      backgroundMedium: backgroundMedium || null,
+      backgroundHero: backgroundHero || null,
       heroFocalX: parseFocal(heroFocalX),
       heroFocalY: parseFocal(heroFocalY),
     });
 
     const eventObj = event.toObject();
-    if (eventObj.backgroundImage) {
-      eventObj.backgroundImage = await getPresignedDownloadUrl(eventObj.backgroundImage);
+    const displayKey = eventObj.backgroundMedium || eventObj.backgroundThumbnail || eventObj.backgroundImage;
+    if (displayKey) {
+      eventObj.backgroundImage = await getPresignedDownloadUrl(displayKey);
+    } else {
+      eventObj.backgroundImage = null;
     }
 
     res.status(201).json({ ok: true, event: eventObj });
@@ -146,7 +159,7 @@ router.put('/:id', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Event not found' });
     }
 
-    const { brideName, groomName, password, isActive, heroFocalX, heroFocalY, backgroundImage } = req.body;
+    const { brideName, groomName, password, isActive, heroFocalX, heroFocalY, backgroundImage, backgroundThumbnail, backgroundMedium, backgroundHero } = req.body;
     if (brideName !== undefined) event.brideName = brideName;
     if (groomName !== undefined) event.groomName = groomName;
     if (password !== undefined) event.password = password;
@@ -155,18 +168,34 @@ router.put('/:id', requireAdminAuth, async (req, res, next) => {
     if (heroFocalY !== undefined) event.heroFocalY = parseFocal(heroFocalY, event.heroFocalY ?? 50);
 
     if (backgroundImage !== undefined) {
-      // Delete old background if exists
-      if (event.backgroundImage && event.backgroundImage !== backgroundImage) {
-        await deleteFromB2(event.backgroundImage).catch(() => {});
+      // Delete old background variants from B2
+      const oldKeys = [
+        event.backgroundImage,
+        event.backgroundThumbnail,
+        event.backgroundMedium,
+        event.backgroundHero
+      ].filter(Boolean);
+
+      if (event.backgroundImage !== backgroundImage) {
+        await Promise.all(
+          oldKeys.map(k => deleteFromB2(k).catch(() => {}))
+        );
       }
+
       event.backgroundImage = backgroundImage;
+      event.backgroundThumbnail = backgroundThumbnail || null;
+      event.backgroundMedium = backgroundMedium || null;
+      event.backgroundHero = backgroundHero || null;
     }
 
     await event.save();
 
     const eventObj = event.toObject();
-    if (eventObj.backgroundImage) {
-      eventObj.backgroundImage = await getPresignedDownloadUrl(eventObj.backgroundImage);
+    const displayKey = eventObj.backgroundMedium || eventObj.backgroundThumbnail || eventObj.backgroundImage;
+    if (displayKey) {
+      eventObj.backgroundImage = await getPresignedDownloadUrl(displayKey);
+    } else {
+      eventObj.backgroundImage = null;
     }
 
     res.json({ ok: true, event: eventObj });
@@ -193,10 +222,14 @@ router.delete('/:id', requireAdminAuth, async (req, res, next) => {
     }
     await ClientEventImage.deleteMany({ eventId: event._id });
 
-    // Delete background image
-    if (event.backgroundImage) {
-      await deleteFromB2(event.backgroundImage).catch(() => {});
-    }
+    // Delete ALL background variants from B2
+    const coverKeys = [
+      event.backgroundImage,
+      event.backgroundThumbnail,
+      event.backgroundMedium,
+      event.backgroundHero
+    ].filter(Boolean);
+    await Promise.all(coverKeys.map(k => deleteFromB2(k).catch(() => {})));
 
     await ClientEvent.deleteOne({ _id: event._id });
     res.json({ ok: true, message: 'Event and all images deleted from B2' });

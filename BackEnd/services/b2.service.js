@@ -3,9 +3,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import Credentials from '../config/Credentials.js';
 
 // Setup S3 Client for Backblaze B2
+// forcePathStyle is REQUIRED for Backblaze B2 — without it, the SDK generates
+// virtual-hosted-style URLs (bucket as subdomain) which B2 does not resolve correctly.
 const s3 = new S3Client({
   endpoint: Credentials.B2_ENDPOINT,
   region: Credentials.B2_REGION || 'us-east-005',
+  forcePathStyle: true,
   credentials: {
     accessKeyId: Credentials.B2_KEY_ID,
     secretAccessKey: Credentials.B2_APP_KEY,
@@ -67,7 +70,12 @@ export async function getPresignedDownloadUrl(key, expiresIn = 86400) {
     return await getSignedUrl(s3, command, { expiresIn });
   } catch (err) {
     console.error(`[B2Service] Error signing URL for key ${key}:`, err);
-    return `${Credentials.CDN_URL}/${key}`; // Fallback to public url
+    // Only fall back to CDN URL if one is configured — otherwise return null
+    // to prevent broken relative paths being served to the frontend.
+    if (Credentials.CDN_URL) {
+      return `${Credentials.CDN_URL}/${key}`;
+    }
+    return null;
   }
 }
 

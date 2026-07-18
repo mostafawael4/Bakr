@@ -77,12 +77,22 @@ export class EventsComponent implements OnInit {
     const heroFocalY = Number(formData.get('heroFocalY'));
     const backgroundFile = formData.get('background') as File;
 
-    let backgroundImageKey: string | null = this.editTarget ? (this.editTarget.backgroundImageKey || null) : null;
+    let backgroundKeys: {
+      backgroundImage: string | null;
+      backgroundThumbnail: string | null;
+      backgroundMedium: string | null;
+      backgroundHero: string | null;
+    } | null = null;
 
     if (backgroundFile) {
       try {
         const result = await this.b2UploadService.uploadImage(backgroundFile, 'client-events');
-        backgroundImageKey = result.hero || result.medium || result.url;
+        backgroundKeys = {
+          backgroundImage:     result.url       || null,
+          backgroundThumbnail: result.thumbnail || null,
+          backgroundMedium:    result.medium    || null,
+          backgroundHero:      result.hero      || null,
+        };
       } catch (err) {
         console.error('Failed to upload background image to B2:', err);
         this.isSaving = false;
@@ -90,14 +100,17 @@ export class EventsComponent implements OnInit {
       }
     }
 
-    const payload = {
+    const payload: any = {
       brideName,
       groomName,
       password,
       heroFocalX,
       heroFocalY,
-      backgroundImage: backgroundImageKey,
     };
+
+    if (backgroundKeys) {
+      Object.assign(payload, backgroundKeys);
+    }
 
     if (this.editTarget) {
       this.clientEventService.updateEvent(this.editTarget._id, payload).subscribe({

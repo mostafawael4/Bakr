@@ -97,6 +97,11 @@ export class ClientEventModalComponent implements OnChanges {
       return;
     }
 
+    // Require background image when creating a new event
+    if (!this.isEdit && !this.backgroundFile) {
+      return;
+    }
+
     const formData = new FormData();
     formData.append('brideName', this.brideName.trim());
     formData.append('groomName', this.groomName.trim());
