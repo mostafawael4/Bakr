@@ -10,6 +10,9 @@ export interface ClientEvent {
   password: string;
   backgroundImage: string | null;
   backgroundImageKey: string | null;
+  backgroundThumbnail?: string | null;
+  backgroundMedium?: string | null;
+  backgroundHero?: string | null;
   heroFocalX?: number;
   heroFocalY?: number;
   isActive: boolean;
@@ -54,6 +57,9 @@ export class ClientEventService {
     groomName: string;
     password: string;
     backgroundImage: string | null;
+    backgroundThumbnail?: string | null;
+    backgroundMedium?: string | null;
+    backgroundHero?: string | null;
     heroFocalX?: number;
     heroFocalY?: number;
   }): Observable<{ ok: boolean; event: ClientEvent }> {
@@ -67,6 +73,9 @@ export class ClientEventService {
       groomName?: string;
       password?: string;
       backgroundImage?: string | null;
+      backgroundThumbnail?: string | null;
+      backgroundMedium?: string | null;
+      backgroundHero?: string | null;
       heroFocalX?: number;
       heroFocalY?: number;
       isActive?: boolean;

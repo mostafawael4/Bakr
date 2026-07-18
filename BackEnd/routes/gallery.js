@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import GalleryCollection from '../models/GalleryCollection.js';
-import GalleryEvent from '../models/GalleryEvent.js';
 import GalleryImage from '../models/GalleryImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
 import { deleteFromB2, getPresignedDownloadUrl } from '../services/b2.service.js';
@@ -20,9 +19,9 @@ router.get('/', async (req, res, next) => {
     const collectionsWithCount = await Promise.all(
       collections.map(async (col) => {
         const imageCount = await GalleryImage.countDocuments({ collectionId: col._id });
-        if (col.coverImage) {
-          col.coverImage = await getPresignedDownloadUrl(col.coverImage);
-        }
+        // Serve best available cover variant as the display URL
+        const displayKey = col.coverMedium || col.coverThumbnail || col.coverImage;
+        col.coverImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
         return { ...col, imageCount };
       })
     );
@@ -33,10 +32,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// POST create collection (admin) — receives coverImage as B2 key
+// POST create collection (admin) — receives all 4 cover B2 keys
 router.post('/', requireAdminAuth, async (req, res, next) => {
   try {
-    const { name, coverImage } = req.body;
+    const { name, coverImage, coverThumbnail, coverMedium, coverHero } = req.body;
     if (!name) {
       return res.status(400).json({ ok: false, message: 'Collection name is required.' });
     }
@@ -49,12 +48,18 @@ router.post('/', requireAdminAuth, async (req, res, next) => {
       return res.status(400).json({ ok: false, message: 'A collection with this name already exists.' });
     }
 
-    const collection = await GalleryCollection.create({ name, coverImage });
-    
+    const collection = await GalleryCollection.create({
+      name,
+      coverImage,
+      coverThumbnail: coverThumbnail || null,
+      coverMedium:    coverMedium    || null,
+      coverHero:      coverHero      || null,
+    });
+
     const colObj = collection.toObject();
-    if (colObj.coverImage) {
-      colObj.coverImage = await getPresignedDownloadUrl(colObj.coverImage);
-    }
+    // Return the best available key as the display URL
+    const displayKey = colObj.coverMedium || colObj.coverThumbnail || colObj.coverImage;
+    colObj.coverImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
 
     res.status(201).json({ ok: true, collection: colObj });
   } catch (err) {
@@ -70,7 +75,7 @@ router.put('/:collectionId', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Collection not found' });
     }
 
-    const { name, coverImage } = req.body;
+    const { name, coverImage, coverThumbnail, coverMedium, coverHero } = req.body;
     if (name !== undefined) {
       const existingCollection = await GalleryCollection.findOne({
         name: new RegExp('^' + name + '$', 'i'),
@@ -83,21 +88,34 @@ router.put('/:collectionId', requireAdminAuth, async (req, res, next) => {
     }
 
     if (coverImage !== undefined) {
-      // Delete old cover from B2 if exists
-      if (collection.coverImage && collection.coverImage !== coverImage) {
-        await deleteFromB2(collection.coverImage).catch(err => 
-          logger.error('[GalleryRouter] Error deleting old collection cover:', err)
+      // Delete all old cover variants from B2 before replacing
+      const oldKeys = [
+        collection.coverImage,
+        collection.coverThumbnail,
+        collection.coverMedium,
+        collection.coverHero,
+      ].filter(Boolean);
+
+      // Only delete if the new primary key is actually different
+      if (collection.coverImage !== coverImage) {
+        await Promise.all(
+          oldKeys.map(k => deleteFromB2(k).catch(err =>
+            logger.error('[GalleryRouter] Error deleting old cover variant:', err)
+          ))
         );
       }
-      collection.coverImage = coverImage;
+
+      collection.coverImage     = coverImage;
+      collection.coverThumbnail = coverThumbnail || null;
+      collection.coverMedium    = coverMedium    || null;
+      collection.coverHero      = coverHero      || null;
     }
 
     await collection.save();
-    
+
     const colObj = collection.toObject();
-    if (colObj.coverImage) {
-      colObj.coverImage = await getPresignedDownloadUrl(colObj.coverImage);
-    }
+    const displayKey = colObj.coverMedium || colObj.coverThumbnail || colObj.coverImage;
+    colObj.coverImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
 
     res.json({ ok: true, collection: colObj });
   } catch (err) {
@@ -105,7 +123,7 @@ router.put('/:collectionId', requireAdminAuth, async (req, res, next) => {
   }
 });
 
-// DELETE collection and ALL its events + images (admin)
+// DELETE collection and ALL its images (admin)
 router.delete('/:collectionId', requireAdminAuth, async (req, res, next) => {
   try {
     const collection = await GalleryCollection.findById(req.params.collectionId);
@@ -113,23 +131,28 @@ router.delete('/:collectionId', requireAdminAuth, async (req, res, next) => {
       return res.status(404).json({ ok: false, message: 'Collection not found' });
     }
 
-    // Delete all direct collection images
+    // 1. Delete all images in this collection from B2 + DB
     const collectionImages = await GalleryImage.find({ collectionId: collection._id });
     for (const img of collectionImages) {
-      if (img.url) await deleteFromB2(img.url).catch(() => {});
+      if (img.url)       await deleteFromB2(img.url).catch(() => {});
       if (img.thumbnail) await deleteFromB2(img.thumbnail).catch(() => {});
-      if (img.medium) await deleteFromB2(img.medium).catch(() => {});
-      if (img.hero) await deleteFromB2(img.hero).catch(() => {});
+      if (img.medium)    await deleteFromB2(img.medium).catch(() => {});
+      if (img.hero)      await deleteFromB2(img.hero).catch(() => {});
     }
     await GalleryImage.deleteMany({ collectionId: collection._id });
+    logger.info(`[GalleryRouter] Deleted ${collectionImages.length} images for collection ${collection._id}`);
 
-    // Delete collection cover image
-    if (collection.coverImage) {
-      await deleteFromB2(collection.coverImage).catch(() => {});
-    }
+    // 2. Delete ALL cover variants (original + thumbnail + medium + hero) from B2
+    const coverKeys = [
+      collection.coverImage,
+      collection.coverThumbnail,
+      collection.coverMedium,
+      collection.coverHero,
+    ].filter(Boolean);
+    await Promise.all(coverKeys.map(k => deleteFromB2(k).catch(() => {})));
 
     await GalleryCollection.deleteOne({ _id: collection._id });
-    res.json({ ok: true, message: 'Collection and all its B2 assets deleted' });
+    res.json({ ok: true, message: 'Collection and all its images deleted from B2 and DB' });
   } catch (err) {
     next(err);
   }
@@ -139,7 +162,7 @@ router.delete('/:collectionId', requireAdminAuth, async (req, res, next) => {
    COLLECTION IMAGES
    ================================================================ */
 
-// GET all direct images in a collection (public)
+// GET all images in a collection (public)
 router.get('/:collectionId/images', async (req, res, next) => {
   try {
     const collection = await GalleryCollection.findById(req.params.collectionId);
@@ -160,9 +183,8 @@ router.get('/:collectionId/images', async (req, res, next) => {
     );
 
     const colObj = collection.toObject ? collection.toObject() : collection;
-    if (colObj.coverImage) {
-      colObj.coverImage = await getPresignedDownloadUrl(colObj.coverImage);
-    }
+    const displayKey = colObj.coverMedium || colObj.coverThumbnail || colObj.coverImage;
+    colObj.coverImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
 
     res.json({ ok: true, collection: colObj, images: signedImages });
   } catch (err) {
@@ -218,7 +240,7 @@ router.post('/:collectionId/images', requireAdminAuth, async (req, res, next) =>
   }
 });
 
-// DELETE a direct image from a collection (admin)
+// DELETE a single image from a collection (admin)
 router.delete('/:collectionId/images/:imageId', requireAdminAuth, async (req, res, next) => {
   try {
     const image = await GalleryImage.findOne({ _id: req.params.imageId, collectionId: req.params.collectionId });
@@ -232,7 +254,7 @@ router.delete('/:collectionId/images/:imageId', requireAdminAuth, async (req, re
     if (image.hero) await deleteFromB2(image.hero).catch(() => {});
 
     await GalleryImage.deleteOne({ _id: image._id });
-    res.json({ ok: true, message: 'Collection image deleted from B2 and DB' });
+    res.json({ ok: true, message: 'Image and all its variants deleted from B2 and DB' });
   } catch (err) {
     next(err);
   }

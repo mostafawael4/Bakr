@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { GalleryService, GalleryCollection } from '../../services/gallery.service';
-import { GalleryEventModalComponent } from '../../components/gallery-event-modal/gallery-event-modal.component';
+import { CollectionModalComponent } from '../../components/collection-modal/collection-modal.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { B2UploadService } from '../../services/b2-upload.service';
 import { environment } from '../../../environments/environment';
@@ -12,7 +12,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [CommonModule, RouterLink, GalleryEventModalComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterLink, CollectionModalComponent, ConfirmDialogComponent],
   templateUrl: './gallery.component.html',
   styleUrls: ['./gallery.component.scss'],
 })
@@ -145,14 +145,22 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     const name = formData.get('name') as string;
     const coverFile = formData.get('cover') as File;
 
-    let coverImageKey: string | null = null;
-    let hasCoverChange = false;
+    let coverKeys: {
+      coverImage: string | null;
+      coverThumbnail: string | null;
+      coverMedium: string | null;
+      coverHero: string | null;
+    } | null = null;
 
     if (coverFile) {
-      hasCoverChange = true;
       try {
         const result = await this.b2UploadService.uploadImage(coverFile, 'collections');
-        coverImageKey = result.thumbnail || result.medium || result.url;
+        coverKeys = {
+          coverImage:     result.url       || null,
+          coverThumbnail: result.thumbnail || null,
+          coverMedium:    result.medium    || null,
+          coverHero:      result.hero      || null,
+        };
       } catch (err) {
         console.error('Failed to upload collection cover image to B2:', err);
         this.isSaving = false;
@@ -162,9 +170,15 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.editTarget) {
-      const payload: { name?: string; coverImage?: string | null } = { name };
-      if (hasCoverChange) {
-        payload.coverImage = coverImageKey;
+      const payload: {
+        name?: string;
+        coverImage?: string | null;
+        coverThumbnail?: string | null;
+        coverMedium?: string | null;
+        coverHero?: string | null;
+      } = { name };
+      if (coverKeys) {
+        Object.assign(payload, coverKeys);
       }
       this.galleryService.updateCollection(this.editTarget._id, payload).subscribe({
         next: () => {
@@ -179,7 +193,13 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     } else {
-      this.galleryService.createCollection({ name, coverImage: coverImageKey }).subscribe({
+      this.galleryService.createCollection({
+        name,
+        coverImage:     coverKeys?.coverImage     || null,
+        coverThumbnail: coverKeys?.coverThumbnail || null,
+        coverMedium:    coverKeys?.coverMedium    || null,
+        coverHero:      coverKeys?.coverHero      || null,
+      }).subscribe({
         next: () => {
           this.showModal = false;
           this.isSaving = false;
