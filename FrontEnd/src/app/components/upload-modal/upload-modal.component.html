@@ -18,12 +18,31 @@
           <span class="percent">{{ state.percent }}%</span>
         </div>
       } @else {
-        <div class="upload-icon done">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        </div>
-        <h3 class="upload-title">Upload Complete</h3>
+        @if (state.successCount === 0 && state.failCount > 0) {
+          <div class="upload-icon error">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <h3 class="upload-title">Upload Failed</h3>
+        } @else if (state.failCount > 0) {
+          <div class="upload-icon warning">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="upload-title">Completed with Errors</h3>
+        } @else {
+          <div class="upload-icon done">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h3 class="upload-title">Upload Complete</h3>
+        }
         <div class="upload-results">
           @if (state.successCount > 0) {
             <p class="result-success">{{ state.successCount }} image{{ state.successCount > 1 ? 's' : '' }} uploaded successfully</p>
