@@ -412,5 +412,5 @@ This project is proprietary. All rights reserved.
 ---
 
 <p align="center">
-  Built with ❤️ by <strong>ABO BAKR</strong>
+  Built with ❤️ by <strong>Mostafa Wael</strong>
 </p>
