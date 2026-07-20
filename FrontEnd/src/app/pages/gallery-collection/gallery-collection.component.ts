@@ -366,7 +366,7 @@ export class GalleryCollectionComponent implements OnInit, AfterViewInit, OnDest
     this.isDeletingCollectionImage = true;
     this.galleryService.deleteCollectionImage(this.collectionId, this.deletingCollectionImage._id).subscribe({
       next: () => {
-        this.collectionImages = this.collectionImages.filter(img => img._id !== this.deletingCollectionImage!._id);
+        this.fetchCollectionImages();
         this.showCollectionImageDeleteDialog = false;
         this.deletingCollectionImage = null;
         this.isDeletingCollectionImage = false;
