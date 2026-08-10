@@ -105,6 +105,22 @@
           <input #bgInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onBackgroundSelected($event)" [disabled]="loading" />
         </div>
 
+        <!-- Active Toggle (edit only) -->
+        @if (isEdit) {
+          <div class="form-group toggle-group">
+            <label>Event Status</label>
+            <div class="toggle-row">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="isActive" name="isActive" [disabled]="loading" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label" [class.active]="isActive" [class.inactive]="!isActive">
+                {{ isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        }
+
         <div class="modal-actions">
           <button type="button" class="btn-cancel" (click)="close()" [disabled]="loading">Cancel</button>
           <button type="submit" class="btn-save" [disabled]="loading">

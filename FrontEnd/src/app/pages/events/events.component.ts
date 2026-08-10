@@ -100,12 +100,15 @@ export class EventsComponent implements OnInit {
       }
     }
 
+    const isActive = formData.get('isActive') as string;
+
     const payload: any = {
       brideName,
       groomName,
       password,
       heroFocalX,
       heroFocalY,
+      isActive: isActive === 'true',
     };
 
     if (backgroundKeys) {
