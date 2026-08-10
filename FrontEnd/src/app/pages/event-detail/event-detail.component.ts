@@ -102,6 +102,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   private wsSub: Subscription | null = null;
   private dlSub: Subscription | null = null;
   private fileProcessingScores: Record<number, number> = {};
+  private scrollObserver: IntersectionObserver | null = null;
+  private heroEl: HTMLElement | null = null;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -143,12 +145,28 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       this.dlSub = this.downloadService.progress$.subscribe((progress) => {
         this.downloadState = { ...progress };
       });
+
+      // IntersectionObserver for scroll-reveal animations
+      this.scrollObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      );
+
+      // Observe elements after a short delay to let Angular render
+      setTimeout(() => this.observeAnimatedElements(), 300);
     }
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
     this.dlSub?.unsubscribe();
+    this.scrollObserver?.disconnect();
   }
 
   @HostListener('window:resize')
@@ -158,14 +176,44 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   @HostListener('window:scroll', [])
   onScroll(): void {
-    if (!this.isBrowser || this.currentView !== 'images' || this.displayedImages.length === this.images.length) return;
-    
-    // Calculate if we are near the bottom of the page (within 400px)
-    const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
-    const max = document.documentElement.scrollHeight;
-    
-    if (pos > max - 400) {
-      this.loadMoreImages();
+    if (!this.isBrowser) return;
+
+    // Hero parallax effect
+    if (!this.heroEl) {
+      this.heroEl = document.querySelector('.event-hero');
+    }
+    if (this.heroEl) {
+      const scrollY = window.scrollY;
+      const heroH = this.heroEl.offsetHeight;
+      if (scrollY <= heroH) {
+        const ratio = scrollY / heroH;
+        const bgContainer = this.heroEl.querySelector('.hero-bg-container') as HTMLElement;
+        const overlay = this.heroEl.querySelector('.hero-overlay') as HTMLElement;
+        const content = this.heroEl.querySelector('.hero-content') as HTMLElement;
+        const scrollInd = this.heroEl.querySelector('.scroll-indicator') as HTMLElement;
+        if (bgContainer) {
+          bgContainer.style.transform = `translateY(${scrollY * 0.35}px) scale(${1 + ratio * 0.05})`;
+        }
+        if (overlay) {
+          overlay.style.opacity = `${1 + ratio * 0.5}`;
+        }
+        if (content) {
+          content.style.transform = `translateY(${scrollY * 0.25}px)`;
+          content.style.opacity = `${1 - ratio * 1.2}`;
+        }
+        if (scrollInd) {
+          scrollInd.style.opacity = `${1 - ratio * 3}`;
+        }
+      }
+    }
+
+    // Infinite scroll for images
+    if (this.currentView === 'images' && this.displayedImages.length < this.images.length) {
+      const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
+      const max = document.documentElement.scrollHeight;
+      if (pos > max - 400) {
+        this.loadMoreImages();
+      }
     }
   }
 
@@ -178,7 +226,36 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         const globalIndex = startIndex + idx;
         this.masonryColumns[globalIndex % this.columnCount].images.push(img);
       });
+      // Observe newly added image items
+      setTimeout(() => this.observeAnimatedElements(), 50);
     }
+  }
+
+  private observeAnimatedElements(): void {
+    if (!this.scrollObserver || !this.isBrowser) return;
+    const selectors = '.fade-up, .folder-card, .image-item';
+    document.querySelectorAll(selectors).forEach((el) => {
+      if (!el.classList.contains('visible')) {
+        this.scrollObserver!.observe(el);
+      }
+    });
+  }
+
+  private resetHeroParallax(): void {
+    if (!this.heroEl) return;
+    
+    const bgContainer = this.heroEl.querySelector('.hero-bg-container') as HTMLElement;
+    const overlay = this.heroEl.querySelector('.hero-overlay') as HTMLElement;
+    const content = this.heroEl.querySelector('.hero-content') as HTMLElement;
+    const scrollInd = this.heroEl.querySelector('.scroll-indicator') as HTMLElement;
+    
+    if (bgContainer) bgContainer.style.transform = '';
+    if (overlay) overlay.style.opacity = '';
+    if (content) {
+      content.style.transform = '';
+      content.style.opacity = '';
+    }
+    if (scrollInd) scrollInd.style.opacity = '';
   }
 
   private calculateColumnCount(): void {
@@ -232,6 +309,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.event = res.event;
         this.folders = res.folders;
         this.loading = false;
+        setTimeout(() => this.observeAnimatedElements(), 100);
       },
       error: () => {
         this.loading = false;
@@ -246,6 +324,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         next: (res) => {
           this.folders = res.folders;
           this.loading = false;
+          setTimeout(() => this.observeAnimatedElements(), 100);
         },
         error: () => {
           this.loading = false;
@@ -268,10 +347,15 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.images = [];
     this.displayedImages = [];
     this.masonryColumns = [];
-    this.heroImageLoaded = false;
-    this.loadedFolders.clear();
     this.loadedImages.clear();
     this.rebuildMasonry();
+
+    // Reset parallax inline styles and scroll to top
+    this.resetHeroParallax();
+    if (this.isBrowser) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     // Refresh folders
     if (this.isAdmin) {
       this.fetchFolders();
@@ -288,6 +372,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.displayedImages = this.images.slice(0, this.pageSize);
         this.rebuildMasonry();
         this.loadingImages = false;
+        setTimeout(() => this.observeAnimatedElements(), 100);
       },
       error: () => {
         this.loadingImages = false;

@@ -54,11 +54,19 @@
       {{ event.brideName }} <span>&amp;</span> {{ event.groomName }}
     </h1>
   </div>
+  <!-- Scroll Indicator -->
+  <div class="scroll-indicator">
+    <span class="scroll-text">Scroll to explore</span>
+    <svg class="scroll-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="7 13 12 18 17 13"/>
+      <polyline points="7 6 12 11 17 6"/>
+    </svg>
+  </div>
 </div>
 
 <!-- ══════════ FOLDERS VIEW ══════════ -->
 @if (currentView === 'folders') {
-<div class="content-section">
+<div class="content-section fade-up">
   <div class="section-header">
     <h2>Event Folders</h2>
     @if (isAdmin) {
@@ -161,7 +169,7 @@
 
 <!-- ══════════ IMAGES VIEW ══════════ -->
 @if (currentView === 'images') {
-<div class="content-section">
+<div class="content-section fade-up">
   <div class="section-header">
     <button class="btn-back" (click)="goBackToFolders()">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"

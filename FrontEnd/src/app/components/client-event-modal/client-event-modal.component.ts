@@ -25,6 +25,7 @@ export class ClientEventModalComponent implements OnChanges {
   backgroundPreview: string | null = null;
   heroFocalX = 50;
   heroFocalY = 50;
+  isActive = true;
   showPassword = false;
   hasAttemptedSubmit = false;
 
@@ -45,6 +46,7 @@ export class ClientEventModalComponent implements OnChanges {
       this.backgroundPreview = this.toFullUrl(this.editEvent.backgroundImage);
       this.heroFocalX = this.editEvent.heroFocalX ?? 50;
       this.heroFocalY = this.editEvent.heroFocalY ?? 50;
+      this.isActive = this.editEvent.isActive ?? true;
     } else {
       this.reset();
     }
@@ -108,6 +110,7 @@ export class ClientEventModalComponent implements OnChanges {
     formData.append('password', this.password.trim());
     formData.append('heroFocalX', String(this.heroFocalX));
     formData.append('heroFocalY', String(this.heroFocalY));
+    formData.append('isActive', String(this.isActive));
     if (this.backgroundFile) {
       formData.append('background', this.backgroundFile);
     }
@@ -123,6 +126,7 @@ export class ClientEventModalComponent implements OnChanges {
     this.backgroundPreview = null;
     this.heroFocalX = 50;
     this.heroFocalY = 50;
+    this.isActive = true;
     this.showPassword = false;
     this.hasAttemptedSubmit = false;
   }
