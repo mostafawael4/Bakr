@@ -17,7 +17,20 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: Credentials.FRONTEND_URL,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow non-browser requests
+    
+    // Clean up FRONTEND_URL in case it has accidental quotes or trailing slashes
+    let frontendUrl = Credentials.FRONTEND_URL || '';
+    frontendUrl = frontendUrl.replace(/["']/g, '').replace(/\/$/, '');
+    
+    // Allow if exact match, or localhost for dev, or any vercel.app preview URL
+    if (origin === frontendUrl || origin.startsWith('http://localhost:') || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
