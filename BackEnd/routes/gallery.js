@@ -2,7 +2,7 @@ import { Router } from 'express';
 import GalleryCollection from '../models/GalleryCollection.js';
 import GalleryImage from '../models/GalleryImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
-import { deleteFromB2, getPresignedDownloadUrl } from '../services/b2.service.js';
+import { deleteFromB2, getPresignedDownloadUrl, resolveImageUrls } from '../services/b2.service.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
@@ -173,13 +173,18 @@ router.get('/:collectionId/images', async (req, res, next) => {
     const images = await GalleryImage.find({ collectionId: collection._id }).sort({ uploadedAt: -1 }).lean();
 
     const signedImages = await Promise.all(
-      images.map(async (img) => ({
-        ...img,
-        url: await getPresignedDownloadUrl(img.url),
-        thumbnail: img.thumbnail ? await getPresignedDownloadUrl(img.thumbnail) : null,
-        medium: img.medium ? await getPresignedDownloadUrl(img.medium) : null,
-        hero: img.hero ? await getPresignedDownloadUrl(img.hero) : null,
-      }))
+      images.map(async (img) => {
+        const urls = await resolveImageUrls([
+          { key: img.url, field: 'url' },
+          { key: img.thumbnail, field: 'thumbnail' },
+          { key: img.medium, field: 'medium' },
+          { key: img.hero, field: 'hero' },
+        ]);
+        return {
+          ...img,
+          ...urls,
+        };
+      })
     );
 
     const colObj = collection.toObject ? collection.toObject() : collection;
@@ -226,10 +231,13 @@ router.post('/:collectionId/images', requireAdminAuth, async (req, res, next) =>
       });
 
       const imgObj = image.toObject();
-      imgObj.url = await getPresignedDownloadUrl(image.url);
-      imgObj.thumbnail = image.thumbnail ? await getPresignedDownloadUrl(image.thumbnail) : null;
-      imgObj.medium = image.medium ? await getPresignedDownloadUrl(image.medium) : null;
-      imgObj.hero = image.hero ? await getPresignedDownloadUrl(image.hero) : null;
+      const urls = await resolveImageUrls([
+        { key: image.url, field: 'url' },
+        { key: image.thumbnail, field: 'thumbnail' },
+        { key: image.medium, field: 'medium' },
+        { key: image.hero, field: 'hero' },
+      ]);
+      Object.assign(imgObj, urls);
 
       savedImages.push(imgObj);
     }

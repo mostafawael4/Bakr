@@ -111,7 +111,7 @@ PORT=4000
 NODE_ENV=development
 
 # MongoDB
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
 
 # Session
 SESSION_SECRET=your-session-secret
@@ -121,9 +121,11 @@ B2_KEY_ID=your-b2-key-id
 B2_APP_KEY=your-b2-app-key
 B2_BUCKET_ID=your-b2-bucket-id
 B2_BUCKET_NAME=your-b2-bucket-name
-B2_ENDPOINT=s3.us-west-002.backblazeb2.com
-B2_REGION=us-west-002
-B2_CDN_URL=https://your-bucket.s3.us-west-002.backblazeb2.com
+B2_ENDPOINT=https://s3.us-east-005.backblazeb2.com
+B2_REGION=us-east-005
+B2_PRIVATE=false                                      # 'true' only for private buckets
+CDN_URL=https://f005.backblazeb2.com/file/your-bucket  # Required when B2_PRIVATE=false
+OFFICIAL_CDN_URL=https://f005.backblazeb2.com/file/your-bucket
 
 # CORS
 FRONTEND_URL=http://localhost:4200
