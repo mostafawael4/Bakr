@@ -24,8 +24,14 @@ app.use(cors({
     let frontendUrl = Credentials.FRONTEND_URL || '';
     frontendUrl = frontendUrl.replace(/["']/g, '').replace(/\/$/, '');
     
-    // Allow if exact match, or localhost for dev, or any vercel.app preview URL
-    if (origin === frontendUrl || origin.startsWith('http://localhost:') || origin.endsWith('.vercel.app')) {
+    // Allow if exact match, or localhost for dev, or any vercel.app preview URL, or custom domain
+    if (
+      origin === frontendUrl ||
+      origin.startsWith('http://localhost:') ||
+      origin.endsWith('.vercel.app') ||
+      origin === 'https://abobakrweddings.com' ||
+      origin === 'https://www.abobakrweddings.com'
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
