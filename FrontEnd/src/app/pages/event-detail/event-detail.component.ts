@@ -424,7 +424,18 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
-    const fileList = Array.from(input.files);
+    const rawFileList = Array.from(input.files);
+
+    // Filter out files that have already been uploaded to this folder
+    const fileList = rawFileList.filter((file) => {
+      return !this.images.some((img) => img.originalName === file.name);
+    });
+
+    if (fileList.length === 0) {
+      alert('All selected images have already been uploaded successfully. No duplicates were uploaded.');
+      input.value = '';
+      return;
+    }
     let totalSize = 0;
     for (const file of fileList) {
       totalSize += file.size;
