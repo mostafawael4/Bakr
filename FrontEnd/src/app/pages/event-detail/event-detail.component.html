@@ -305,4 +305,4 @@
   (confirmed)="confirmDeleteFolder()" (cancelled)="cancelDeleteFolder()" />
 
 <!-- Download Progress Modal -->
-<app-download-modal [state]="downloadState" (dismissed)="onDownloadDismissed()" />
+<app-download-modal [state]="downloadState" (dismissed)="onDownloadDismissed()" (retryFailed)="onRetryFailedDownloads($event)" />

@@ -97,6 +97,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     percent: 0,
     done: false,
     error: null,
+    failedImages: [],
   };
 
   private wsSub: Subscription | null = null;
@@ -701,6 +702,16 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   onDownloadDismissed(): void {
     this.downloadState = { ...this.downloadState, visible: false };
+  }
+
+  onRetryFailedDownloads(failedImages: any[]): void {
+    // Hide current modal
+    this.downloadState = { ...this.downloadState, visible: false };
+    
+    // Start new download for failed images
+    setTimeout(() => {
+      this.downloadService.downloadFolderAsZip(failedImages, `${this.selectedFolder} (Retried)`);
+    }, 300);
   }
 
   get lightboxSlides(): ImageLightboxSlide[] {

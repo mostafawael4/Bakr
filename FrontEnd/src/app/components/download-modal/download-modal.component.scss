@@ -139,6 +139,53 @@
   }
 }
 
+/* ── Failed Section ── */
+.dl-failed-section {
+  background-color: rgba(220, 38, 38, 0.05);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.dl-failed-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dl-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dl-retry-btn {
+  padding: 0.65rem 2rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background-color: var(--color-interactive);
+  color: var(--color-surface);
+  font-size: 0.85rem;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--color-interactive-hover);
+  }
+}
+
+.dl-actions .dl-close-btn {
+  margin-top: 0;
+}
+
 /* ── Animations ── */
 @keyframes dlFadeIn {
   from { opacity: 0; }

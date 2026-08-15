@@ -10,6 +10,7 @@ export interface DownloadProgress {
   percent: number;
   done: boolean;
   error: string | null;
+  failedImages: { url: string; originalName: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -42,6 +43,22 @@ export class DownloadService {
   }
 
   /**
+   * Helper to fetch with retries
+   */
+  private async fetchWithRetry(url: string, retries: number = 3): Promise<Response> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (res.ok) return res;
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // exponential backoff
+      }
+    }
+    throw new Error('Failed to fetch after retries');
+  }
+
+  /**
    * Download all images in a folder as a ZIP archive.
    * Uses JSZip (client-side) so there is zero server load.
    * Images are fetched directly from their URLs (CDN/origin).
@@ -60,6 +77,7 @@ export class DownloadService {
       percent: 0,
       done: false,
       error: null,
+      failedImages: [],
     };
     this.progress$.next({ ...state });
 
@@ -77,13 +95,13 @@ export class DownloadService {
         const batch = images.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map(async (img) => {
-            const res = await fetch(img.url, { mode: 'cors' });
+            const res = await this.fetchWithRetry(img.url, 3);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return { name: img.originalName, data: await res.arrayBuffer() };
+            return { name: img.originalName, data: await res.arrayBuffer(), img };
           }),
         );
 
-        for (const result of results) {
+        results.forEach((result, idx) => {
           if (result.status === 'fulfilled') {
             // Ensure unique filename inside the zip
             let name = result.value.name || 'image.jpg';
@@ -96,21 +114,26 @@ export class DownloadService {
             }
             usedNames.add(name);
             zip.file(name, result.value.data);
+            state.downloadedFiles++;
+          } else {
+            // Tracking failed image
+            state.failedImages.push(batch[idx]);
           }
 
-          state.downloadedFiles++;
-          state.percent = Math.round((state.downloadedFiles / state.totalFiles) * 100);
+          state.percent = Math.round(((state.downloadedFiles + state.failedImages.length) / state.totalFiles) * 100);
           this.progress$.next({ ...state });
-        }
+        });
       }
 
-      // Generate the ZIP as a blob
-      state.percent = 99; // Show "finalizing"
-      this.progress$.next({ ...state });
+      // Generate the ZIP as a blob if we downloaded anything
+      if (state.downloadedFiles > 0) {
+        state.percent = 99; // Show "finalizing"
+        this.progress$.next({ ...state });
 
-      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
-      const zipName = `${folderName.replace(/[^a-zA-Z0-9-_ ]/g, '_')}.zip`;
-      this.saveBlob(zipBlob, zipName);
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+        const zipName = `${folderName.replace(/[^a-zA-Z0-9-_ ]/g, '_')}.zip`;
+        this.saveBlob(zipBlob, zipName);
+      }
 
       state.percent = 100;
       state.done = true;

@@ -9,6 +9,7 @@ export interface DownloadModalState {
   percent: number;
   done: boolean;
   error: string | null;
+  failedImages: { url: string; originalName: string }[];
 }
 
 @Component({
@@ -27,11 +28,17 @@ export class DownloadModalComponent {
     percent: 0,
     done: false,
     error: null,
+    failedImages: [],
   };
 
   @Output() dismissed = new EventEmitter<void>();
+  @Output() retryFailed = new EventEmitter<{ url: string; originalName: string }[]>();
 
   dismiss(): void {
     this.dismissed.emit();
+  }
+
+  onRetryFailed(): void {
+    this.retryFailed.emit(this.state.failedImages);
   }
 }
