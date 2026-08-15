@@ -46,13 +46,18 @@ export class AuthService {
     });
   }
 
-  login(email: string, password: string): Observable<{ ok: boolean; email: string; role: string }> {
-    return this.http.post<{ ok: boolean; email: string; role: string }>(
+  login(email: string, password: string): Observable<{ ok: boolean; email: string; role: string; token?: string }> {
+    return this.http.post<{ ok: boolean; email: string; role: string; token?: string }>(
       `${environment.apiUrl}/auth/login`,
       { email, password },
       { withCredentials: true }
     ).pipe(
-      tap((res) => this.userSubject.next({ email: res.email, role: res.role }))
+      tap((res) => {
+        this.userSubject.next({ email: res.email, role: res.role });
+        if (res.token && isPlatformBrowser(this.platformId)) {
+          localStorage.setItem('bakr_token', res.token);
+        }
+      })
     );
   }
 
@@ -62,7 +67,12 @@ export class AuthService {
       {},
       { withCredentials: true }
     ).pipe(
-      tap(() => this.userSubject.next(null))
+      tap(() => {
+        this.userSubject.next(null);
+        if (isPlatformBrowser(this.platformId)) {
+          localStorage.removeItem('bakr_token');
+        }
+      })
     );
   }
 

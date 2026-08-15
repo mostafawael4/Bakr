@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Credentials from '../config/Credentials.js';
 import { requireAdminAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -22,7 +24,13 @@ router.post('/setup', async (req, res, next) => {
     const user = await User.create({ email, passwordHash });
 
     req.session.adminId = user._id;
-    res.status(201).json({ ok: true, message: 'Admin created successfully', email: user.email });
+    const token = jwt.sign(
+      { adminId: user._id.toString(), role: user.role },
+      Credentials.SESSION_SECRET || 'dev-secret-change-me',
+      { expiresIn: '7d' }
+    );
+    
+    res.status(201).json({ ok: true, message: 'Admin created successfully', email: user.email, token });
   } catch (err) {
     next(err);
   }
@@ -43,7 +51,13 @@ router.post('/login', async (req, res, next) => {
     }
 
     req.session.adminId = user._id;
-    res.json({ ok: true, email: user.email, role: user.role });
+    const token = jwt.sign(
+      { adminId: user._id.toString(), role: user.role },
+      Credentials.SESSION_SECRET || 'dev-secret-change-me',
+      { expiresIn: '7d' }
+    );
+
+    res.json({ ok: true, email: user.email, role: user.role, token });
   } catch (err) {
     next(err);
   }

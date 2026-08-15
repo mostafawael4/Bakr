@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface ClientEvent {
@@ -120,8 +120,14 @@ export class ClientEventService {
 
   /* ── Client — access ── */
 
-  accessEvent(eventId: string, password: string): Observable<{ ok: boolean; event: any }> {
-    return this.http.post<{ ok: boolean; event: any }>(`${this.url}/access`, { eventId, password }, { withCredentials: true });
+  accessEvent(eventId: string, password: string): Observable<{ ok: boolean; event: any; token?: string }> {
+    return this.http.post<{ ok: boolean; event: any; token?: string }>(`${this.url}/access`, { eventId, password }, { withCredentials: true }).pipe(
+      tap(res => {
+        if (res.token && typeof window !== 'undefined') {
+          localStorage.setItem('bakr_token', res.token);
+        }
+      })
+    );
   }
 
   checkAccess(): Observable<{ ok: boolean; event: any }> {
