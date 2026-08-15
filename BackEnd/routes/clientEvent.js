@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import ClientEvent from '../models/ClientEvent.js';
 import ClientEventImage from '../models/ClientEventImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
+import Credentials from '../config/Credentials.js';
 import { deleteFromB2, getPresignedDownloadUrl, resolveImageUrls } from '../services/b2.service.js';
 import logger from '../utils/logger.js';
 
@@ -72,12 +74,38 @@ async function publicEventPayload(event) {
 /* ── Helper: check client session ── */
 function requireClientAccess(req, res, next) {
   const eventId = req.params.id || req.params.eventId;
+  
+  // 1. Session checks
   if (req.session && req.session.clientEventId === eventId) {
     return next();
   }
   if (req.session && req.session.adminId) {
     return next();
   }
+
+  // 2. JWT token check
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, Credentials.SESSION_SECRET || 'dev-secret-change-me');
+      
+      // Admin token allows any event
+      if (decoded.role === 'admin') {
+        req.adminId = decoded.adminId;
+        return next();
+      }
+      
+      // Client token must match the event ID
+      if (decoded.clientEventId === eventId) {
+        req.clientEventId = decoded.clientEventId;
+        return next();
+      }
+    } catch (err) {
+      // invalid token falls through to 401
+    }
+  }
+
   return res.status(401).json({ ok: false, message: 'Unauthorized — please enter the event password' });
 }
 
@@ -264,12 +292,20 @@ router.post('/access', async (req, res, next) => {
       return res.status(401).json({ ok: false, message: 'Incorrect password' });
     }
 
-    // Store client access in session
+    // Store client access in session (for desktop / backwards compatibility)
     req.session.clientEventId = event._id.toString();
+
+    // Generate JWT token (for mobile / Safari compatibility)
+    const token = jwt.sign(
+      { clientEventId: event._id.toString(), role: 'client' },
+      Credentials.SESSION_SECRET || 'dev-secret-change-me',
+      { expiresIn: '7d' }
+    );
 
     res.json({
       ok: true,
       event: await publicEventPayload(event),
+      token,
     });
   } catch (err) {
     next(err);
@@ -279,11 +315,28 @@ router.post('/access', async (req, res, next) => {
 // GET check client session (public)
 router.get('/access/check', async (req, res, next) => {
   try {
-    if (!req.session || !req.session.clientEventId) {
+    let eventId = null;
+
+    if (req.session && req.session.clientEventId) {
+      eventId = req.session.clientEventId;
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!eventId && authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, Credentials.SESSION_SECRET || 'dev-secret-change-me');
+        if (decoded.clientEventId) {
+          eventId = decoded.clientEventId;
+        }
+      } catch (err) {}
+    }
+
+    if (!eventId) {
       return res.status(401).json({ ok: false, message: 'No active session' });
     }
 
-    const event = await ClientEvent.findById(req.session.clientEventId);
+    const event = await ClientEvent.findById(eventId);
     if (!event || !event.isActive) {
       return res.status(401).json({ ok: false, message: 'Session expired' });
     }
