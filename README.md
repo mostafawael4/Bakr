@@ -105,31 +105,7 @@ cp .env.example .env
 
 Configure your `.env` file with the following variables:
 
-```env
-# Server
-PORT=4000
-NODE_ENV=development
 
-# MongoDB
-MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
-
-# Session
-SESSION_SECRET=your-session-secret
-
-# Backblaze B2
-B2_KEY_ID=your-b2-key-id
-B2_APP_KEY=your-b2-app-key
-B2_BUCKET_ID=your-b2-bucket-id
-B2_BUCKET_NAME=your-b2-bucket-name
-B2_ENDPOINT=https://s3.us-east-005.backblazeb2.com
-B2_REGION=us-east-005
-B2_PRIVATE=false                                      # 'true' only for private buckets
-CDN_URL=https://f005.backblazeb2.com/file/your-bucket  # Required when B2_PRIVATE=false
-OFFICIAL_CDN_URL=https://f005.backblazeb2.com/file/your-bucket
-
-# CORS
-FRONTEND_URL=http://localhost:4200
-```
 
 ```bash
 # Set up B2 CORS (one-time)
