@@ -39,16 +39,15 @@ export class B2UploadService {
         const img = new Image();
         img.src = event.target?.result as string;
         img.onload = () => {
-          // If image is already smaller, don't upscale it
-          if (img.width <= maxWidth) {
-            // Convert original to blob if needed, or just return original file
-            resolve(file);
-            return;
-          }
+          let width = img.width;
+          let height = img.height;
 
-          const scale = maxWidth / img.width;
-          const width = maxWidth;
-          const height = img.height * scale;
+          // If image is larger than maxWidth, downscale it
+          if (img.width > maxWidth) {
+            const scale = maxWidth / img.width;
+            width = maxWidth;
+            height = img.height * scale;
+          }
 
           const canvas = document.createElement('canvas');
           canvas.width = width;

@@ -1,14 +1,13 @@
 import { Component, OnInit, OnDestroy, inject, PLATFORM_ID, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ClientEventService, ClientEventFolder, ClientEventImage } from '../../services/client-event.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { B2UploadService } from '../../services/b2-upload.service';
-import { DownloadService, DownloadProgress } from '../../services/download.service';
+import { DownloadService } from '../../services/download.service';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { UploadModalComponent, UploadState } from '../../components/upload-modal/upload-modal.component';
 import { ImageLightboxComponent, ImageLightboxSlide } from '../../components/image-lightbox/image-lightbox.component';
@@ -37,6 +36,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   eventId = '';
   event: any = null;
   folders: ClientEventFolder[] = [];
+  
   images: ClientEventImage[] = [];
   displayedImages: ClientEventImage[] = [];
   masonryColumns: { images: ClientEventImage[] }[] = [];
@@ -46,9 +46,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   loading = true;
   loadingImages = false;
 
-  // Current view state
-  currentView: 'folders' | 'images' = 'folders';
-  selectedFolder: string = '';
+  selectedFolder = '';
   folderCoverImageId: string | null = null;
 
   // Create folder
@@ -142,12 +140,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Subscribe to download progress updates
       this.dlSub = this.downloadService.progress$.subscribe((progress) => {
         this.downloadState = { ...progress };
       });
 
-      // IntersectionObserver for scroll-reveal animations
       this.scrollObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -158,9 +154,6 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         },
         { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
       );
-
-      // Observe elements after a short delay to let Angular render
-      setTimeout(() => this.observeAnimatedElements(), 300);
     }
   }
 
@@ -168,6 +161,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.wsSub?.unsubscribe();
     this.dlSub?.unsubscribe();
     this.scrollObserver?.disconnect();
+    if (this.isBrowser) {
+      document.body.classList.remove('hide-main-navbar');
+    }
   }
 
   @HostListener('window:resize')
@@ -179,7 +175,6 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   onScroll(): void {
     if (!this.isBrowser) return;
 
-    // Hero parallax effect
     if (!this.heroEl) {
       this.heroEl = document.querySelector('.event-hero');
     }
@@ -192,24 +187,25 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         const overlay = this.heroEl.querySelector('.hero-overlay') as HTMLElement;
         const content = this.heroEl.querySelector('.hero-content') as HTMLElement;
         const scrollInd = this.heroEl.querySelector('.scroll-indicator') as HTMLElement;
-        if (bgContainer) {
-          bgContainer.style.transform = `translateY(${scrollY * 0.35}px) scale(${1 + ratio * 0.05})`;
-        }
-        if (overlay) {
-          overlay.style.opacity = `${1 + ratio * 0.5}`;
-        }
+        if (bgContainer) bgContainer.style.transform = `translateY(${scrollY * 0.35}px) scale(${1 + ratio * 0.05})`;
+        if (overlay) overlay.style.opacity = `${1 + ratio * 0.5}`;
         if (content) {
           content.style.transform = `translateY(${scrollY * 0.25}px)`;
           content.style.opacity = `${1 - ratio * 1.2}`;
         }
-        if (scrollInd) {
-          scrollInd.style.opacity = `${1 - ratio * 3}`;
-        }
+        if (scrollInd) scrollInd.style.opacity = `${1 - ratio * 3}`;
+      }
+      
+      // Hide main navbar if we scroll past the hero minus a small offset
+      if (scrollY > heroH - 50) {
+        document.body.classList.add('hide-main-navbar');
+      } else {
+        document.body.classList.remove('hide-main-navbar');
       }
     }
 
     // Infinite scroll for images
-    if (this.currentView === 'images' && this.displayedImages.length < this.images.length) {
+    if (this.selectedFolder && this.displayedImages.length < this.images.length) {
       const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.clientHeight;
       const max = document.documentElement.scrollHeight;
       if (pos > max - 400) {
@@ -218,45 +214,13 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadMoreImages(): void {
-    const nextImages = this.images.slice(this.displayedImages.length, this.displayedImages.length + this.pageSize);
-    if (nextImages.length > 0) {
-      const startIndex = this.displayedImages.length;
-      this.displayedImages = [...this.displayedImages, ...nextImages];
-      nextImages.forEach((img, idx) => {
-        const globalIndex = startIndex + idx;
-        this.masonryColumns[globalIndex % this.columnCount].images.push(img);
-      });
-      // Observe newly added image items
-      setTimeout(() => this.observeAnimatedElements(), 50);
-    }
-  }
-
   private observeAnimatedElements(): void {
     if (!this.scrollObserver || !this.isBrowser) return;
-    const selectors = '.fade-up, .folder-card, .image-item';
-    document.querySelectorAll(selectors).forEach((el) => {
+    document.querySelectorAll('.fade-up, .image-item').forEach((el) => {
       if (!el.classList.contains('visible')) {
         this.scrollObserver!.observe(el);
       }
     });
-  }
-
-  private resetHeroParallax(): void {
-    if (!this.heroEl) return;
-    
-    const bgContainer = this.heroEl.querySelector('.hero-bg-container') as HTMLElement;
-    const overlay = this.heroEl.querySelector('.hero-overlay') as HTMLElement;
-    const content = this.heroEl.querySelector('.hero-content') as HTMLElement;
-    const scrollInd = this.heroEl.querySelector('.scroll-indicator') as HTMLElement;
-    
-    if (bgContainer) bgContainer.style.transform = '';
-    if (overlay) overlay.style.opacity = '';
-    if (content) {
-      content.style.transform = '';
-      content.style.opacity = '';
-    }
-    if (scrollInd) scrollInd.style.opacity = '';
   }
 
   private calculateColumnCount(): void {
@@ -266,9 +230,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     if (width <= 768) newCount = 2;
     else if (width <= 1024) newCount = 3;
     
-    if (newCount !== this.columnCount || this.masonryColumns.length === 0) {
+    if (newCount !== this.columnCount) {
       this.columnCount = newCount;
-      this.rebuildMasonry();
+      if (this.displayedImages.length > 0) {
+        this.rebuildMasonry();
+      }
     }
   }
 
@@ -284,20 +250,14 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.heroImageLoaded = false;
     this.loadedFolders.clear();
     this.loadedImages.clear();
-    // Admin uses the admin folders endpoint; client uses details endpoint
     if (this.isAdmin) {
       this.clientEventService.getEvents().subscribe({
         next: (res) => {
           const ev = res.events.find(e => e._id === this.eventId);
-          if (ev) {
-            this.event = ev;
-          }
+          if (ev) this.event = ev;
           this.fetchFolders();
         },
-        error: () => {
-          // Try client endpoint
-          this.fetchAsClient();
-        },
+        error: () => this.fetchAsClient(),
       });
     } else {
       this.fetchAsClient();
@@ -309,6 +269,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.event = res.event;
         this.folders = res.folders;
+        if (this.folders.length > 0) {
+          this.selectFolder(this.folders[0].key, false);
+        }
         this.loading = false;
         setTimeout(() => this.observeAnimatedElements(), 100);
       },
@@ -324,6 +287,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       this.clientEventService.getFolders(this.eventId).subscribe({
         next: (res) => {
           this.folders = res.folders;
+          if (this.folders.length > 0) {
+            this.selectFolder(this.folders[0].key, false);
+          }
           this.loading = false;
           setTimeout(() => this.observeAnimatedElements(), 100);
         },
@@ -334,42 +300,44 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  openFolder(folder: ClientEventFolder): void {
-    this.selectedFolder = folder.key;
-    this.folderCoverImageId = folder.coverImageId ?? null;
-    this.currentView = 'images';
+  selectFolder(folderKey: string, shouldScroll: boolean = true): void {
+    if (this.selectedFolder === folderKey) return;
+    this.selectedFolder = folderKey;
+    const folder = this.folders.find(f => f.key === folderKey);
+    this.folderCoverImageId = folder?.coverImageId || null;
+    this.loadedImages.clear();
+    
+    // Scroll instantly to the top of the folder section, only if requested
+    if (this.isBrowser && shouldScroll) {
+      setTimeout(() => {
+        const hero = document.querySelector('.event-hero') as HTMLElement;
+        if (hero) {
+          const y = hero.offsetHeight;
+          window.scrollTo({ top: y, behavior: 'auto' });
+        }
+      }, 0);
+    }
+
     this.loadFolderImages();
   }
 
-  goBackToFolders(): void {
-    this.currentView = 'folders';
-    this.selectedFolder = '';
-    this.folderCoverImageId = null;
-    this.images = [];
-    this.displayedImages = [];
-    this.masonryColumns = [];
-    this.loadedImages.clear();
-    this.rebuildMasonry();
-
-    // Reset parallax inline styles and scroll to top
-    this.resetHeroParallax();
-    if (this.isBrowser) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Refresh folders
-    if (this.isAdmin) {
-      this.fetchFolders();
-    } else {
-      this.fetchAsClient();
-    }
+  private sortImages(imgs: ClientEventImage[]): ClientEventImage[] {
+    return imgs.sort((a, b) => {
+      const nameA = a.originalName || '';
+      const nameB = b.originalName || '';
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
   }
 
   private loadFolderImages(): void {
     this.loadingImages = true;
+    this.images = [];
+    this.displayedImages = [];
+    this.rebuildMasonry();
+
     this.clientEventService.getImages(this.eventId, this.selectedFolder).subscribe({
       next: (res) => {
-        this.images = res.images;
+        this.images = this.sortImages(res.images);
         this.displayedImages = this.images.slice(0, this.pageSize);
         this.rebuildMasonry();
         this.loadingImages = false;
@@ -379,6 +347,20 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.loadingImages = false;
       },
     });
+  }
+
+  loadMoreImages(): void {
+    if (this.loadingImages) return;
+    const nextImages = this.images.slice(this.displayedImages.length, this.displayedImages.length + this.pageSize);
+    if (nextImages.length > 0) {
+      const startIndex = this.displayedImages.length;
+      this.displayedImages = [...this.displayedImages, ...nextImages];
+      nextImages.forEach((img, idx) => {
+        const globalIndex = startIndex + idx;
+        this.masonryColumns[globalIndex % this.columnCount].images.push(img);
+      });
+      setTimeout(() => this.observeAnimatedElements(), 50);
+    }
   }
 
   /* ── Admin: Create Folder ── */
@@ -401,18 +383,17 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     }
     this.folderError = null;
 
-    // Creating a folder is just tagging — we create a placeholder by uploading
-    // But since folders are derived from images, we just set the selectedFolder
-    // and let the admin upload images to it.
-    // For now, just open the upload flow with the new folder name
-    this.selectedFolder = folderName;
-    this.currentView = 'images';
-    this.images = [];
-    this.displayedImages = [];
-    this.rebuildMasonry();
-    this.loadingImages = false;
+    this.folders.push({
+      key: folderName,
+      count: 0,
+      coverImage: null
+    });
+    
     this.showFolderInput = false;
     this.newFolderName = '';
+    setTimeout(() => {
+      this.selectFolder(folderName);
+    }, 100);
   }
 
   /* ── Admin: Upload ── */
@@ -423,14 +404,12 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   async onFilesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
+    if (!input.files || input.files.length === 0 || !this.selectedFolder) return;
 
     const rawFileList = Array.from(input.files);
 
-    // Filter out files that have already been uploaded to this folder
-    const fileList = rawFileList.filter((file) => {
-      return !this.images.some((img) => img.originalName === file.name);
-    });
+    const existingNames = new Set(this.images.map(img => img.originalName));
+    const fileList = rawFileList.filter(file => !existingNames.has(file.name));
 
     if (fileList.length === 0) {
       alert('All selected images have already been uploaded successfully. No duplicates were uploaded.');
@@ -496,7 +475,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       };
 
       this.clientEventService.uploadImages(this.eventId, this.selectedFolder, uploadedImages).subscribe({
-        next: () => {
+        next: (res) => {
           this.uploadState = {
             ...this.uploadState,
             done: true,
@@ -504,33 +483,30 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             statusLabel: `Completed successfully (${this.uploadState.successCount}/${fileList.length})`,
           };
           input.value = '';
+          
+          this.images = this.sortImages([...this.images, ...res.images]);
+          this.displayedImages = this.images.slice(0, this.displayedImages.length + res.images.length);
+          this.rebuildMasonry();
+          setTimeout(() => this.observeAnimatedElements(), 100);
         },
         error: () => {
-          this.uploadState = {
-            ...this.uploadState,
-            done: true,
-            statusLabel: 'Failed to save upload info to database',
-          };
+          this.uploadState = { ...this.uploadState, done: true, statusLabel: 'Failed to save upload info' };
           input.value = '';
         },
       });
     } else {
-      this.uploadState = {
-        ...this.uploadState,
-        done: true,
-        statusLabel: 'All uploads failed',
-      };
+      this.uploadState = { ...this.uploadState, done: true, statusLabel: 'All uploads failed' };
       input.value = '';
     }
   }
 
   onUploadDismissed(): void {
     this.uploadState = { ...this.uploadState, visible: false };
-    this.loadFolderImages();
   }
 
   /* ── Admin: Delete Image ── */
-  askDeleteImage(image: ClientEventImage): void {
+  askDeleteImage(image: ClientEventImage, e?: MouseEvent): void {
+    e?.stopPropagation();
     this.deleteTarget = image;
     this.showDeleteDialog = true;
   }
@@ -545,13 +521,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.images = this.images.filter(img => img._id !== imageId);
         this.displayedImages = this.displayedImages.filter(img => img._id !== imageId);
         this.rebuildMasonry();
+        setTimeout(() => this.observeAnimatedElements(), 100);
         if (this.folderCoverImageId === imageId) {
           this.folderCoverImageId = null;
           const folder = this.folders.find(f => f.key === this.selectedFolder);
-          if (folder) {
-            folder.coverImageId = null;
-            folder.coverImage = null;
-          }
+          if (folder) folder.coverImageId = null;
         }
         this.showDeleteDialog = false;
         this.deleteTarget = null;
@@ -571,9 +545,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   /* ── Admin: Delete Folder ── */
-  askDeleteFolder(folderKey: string, e: MouseEvent): void {
-    e.stopPropagation();
-    this.deleteFolderTarget = folderKey;
+  askDeleteFolder(): void {
+    if (!this.selectedFolder) return;
+    this.deleteFolderTarget = this.selectedFolder;
     this.showDeleteFolderDialog = true;
   }
 
@@ -586,6 +560,15 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.showDeleteFolderDialog = false;
         this.deleteFolderTarget = null;
         this.isDeletingFolder = false;
+        
+        if (this.folders.length > 0) {
+          this.selectFolder(this.folders[0].key);
+        } else {
+          this.selectedFolder = '';
+          this.images = [];
+          this.displayedImages = [];
+          this.rebuildMasonry();
+        }
       },
       error: () => {
         this.showDeleteFolderDialog = false;
@@ -648,15 +631,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   private saveHeroFocal(heroFocalX: number, heroFocalY: number): void {
     if (this.savingHeroFocal) return;
-
     this.savingHeroFocal = true;
     this.clientEventService.updateEvent(this.eventId, { heroFocalX, heroFocalY }).subscribe({
-      next: () => {
-        this.savingHeroFocal = false;
-      },
-      error: () => {
-        this.savingHeroFocal = false;
-      },
+      next: () => this.savingHeroFocal = false,
+      error: () => this.savingHeroFocal = false,
     });
   }
 
@@ -674,23 +652,17 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   /* ── Downloads ── */
-
-  /** Download a single image (the original / highest-quality version) */
   downloadSingleImage(image: ClientEventImage, e?: MouseEvent): void {
     e?.stopPropagation();
     const url = this.getFullUrl(image.url);
     this.downloadService.downloadSingleImage(url, image.originalName);
   }
 
-  /** Download the current lightbox image */
   downloadLightboxImage(index: number): void {
     const img = this.images[index];
-    if (img) {
-      this.downloadSingleImage(img);
-    }
+    if (img) this.downloadSingleImage(img);
   }
 
-  /** Download all images in the current folder as a ZIP */
   downloadFolder(): void {
     if (!this.images.length || !this.selectedFolder) return;
     const folderImages = this.images.map((img) => ({
@@ -705,12 +677,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   onRetryFailedDownloads(failedImages: any[]): void {
-    // Hide current modal
     this.downloadState = { ...this.downloadState, visible: false };
-    
-    // Start new download for failed images
     setTimeout(() => {
-      this.downloadService.downloadFolderAsZip(failedImages, `${this.selectedFolder} (Retried)`);
+      this.downloadService.downloadFolderAsZip(failedImages, 'Retried_Images');
     }, 300);
   }
 
@@ -732,7 +701,6 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     return parts.join(', ');
   }
 
-  /* ── Helpers ── */
   getFullUrl(path: string | null): string {
     if (!path) return '';
     if (path.startsWith('http')) return path;

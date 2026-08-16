@@ -59,7 +59,8 @@ function parseFocal(value, fallback = 50) {
 }
 
 async function publicEventPayload(event) {
-  const displayKey = event.backgroundMedium || event.backgroundThumbnail || event.backgroundImage;
+  // Use the highest quality available for the hero
+  const displayKey = event.backgroundHero || event.backgroundImage || event.backgroundMedium;
   const bgImage = displayKey ? await getPresignedDownloadUrl(displayKey) : null;
   return {
     _id: event._id,
@@ -219,7 +220,7 @@ router.put('/:id', requireAdminAuth, async (req, res, next) => {
     await event.save();
 
     const eventObj = event.toObject();
-    const displayKey = eventObj.backgroundMedium || eventObj.backgroundThumbnail || eventObj.backgroundImage;
+    const displayKey = eventObj.backgroundHero || eventObj.backgroundImage || eventObj.backgroundMedium;
     if (displayKey) {
       eventObj.backgroundImage = await getPresignedDownloadUrl(displayKey);
     } else {
@@ -382,7 +383,14 @@ router.get('/:id/images', requireClientAccess, async (req, res, next) => {
       filter.folderKey = req.query.folder;
     }
 
-    const images = await ClientEventImage.find(filter).sort({ uploadedAt: -1 }).lean();
+    let images = await ClientEventImage.find(filter).lean();
+
+    // Natural sort by originalName (e.g. S&h-1, S&h-2, S&h-10)
+    images.sort((a, b) => {
+      const nameA = a.originalName || '';
+      const nameB = b.originalName || '';
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     const signedImages = await Promise.all(
       images.map(async (img) => {

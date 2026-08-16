@@ -6,6 +6,11 @@
   z-index: 500;
   background-color: var(--navbar-bg);
   border-bottom: none;
+  transition: transform 0.3s ease;
+}
+
+:host-context(.hide-main-navbar) .navbar {
+  transform: translateY(-100%);
 }
 
 .navbar-container {

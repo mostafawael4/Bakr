@@ -21,12 +21,17 @@
 >
   @if (event.backgroundImage) {
     <div class="hero-bg-container" [class.loading]="!heroImageLoaded">
+      <div 
+        class="hero-blur-bg" 
+        [style.background-image]="'url(' + getFullUrl(event.backgroundImage) + ')'"
+        [class.loaded]="heroImageLoaded"
+      ></div>
       <img
         [src]="getFullUrl(event.backgroundImage)"
         alt="Event background cover"
         (load)="onHeroImageLoad()"
         [class.loaded]="heroImageLoaded"
-        [style.objectPosition]="getHeroPosition()"
+        class="hero-main-img"
       />
     </div>
   }
@@ -64,25 +69,34 @@
   </div>
 </div>
 
-<!-- ══════════ FOLDERS VIEW ══════════ -->
-@if (currentView === 'folders') {
-<div class="content-section fade-up">
-  <div class="section-header">
-    <h2>Event Folders</h2>
-    @if (isAdmin) {
-    <button class="btn-add-folder" (click)="toggleFolderInput()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      New Folder
-    </button>
-    }
+<!-- Sticky Navigation Bar -->
+<nav class="sticky-folder-nav">
+  <div class="nav-content">
+    <div class="nav-brand">
+      <span class="names">{{ event.brideName }} &amp; {{ event.groomName }}</span>
+      <span class="subtitle">ABO BAKR</span>
+    </div>
+    <div class="nav-links">
+      @for (folder of folders; track folder.key) {
+        <button 
+          class="nav-link" 
+          [class.active]="selectedFolder === folder.key"
+          (click)="selectFolder(folder.key)"
+        >
+          {{ folder.key | uppercase }}
+        </button>
+      }
+      @if (isAdmin) {
+        <button class="nav-link btn-add" (click)="toggleFolderInput()" title="New Folder">
+          + NEW FOLDER
+        </button>
+      }
+    </div>
   </div>
+</nav>
 
-  <!-- New Folder Input -->
-  @if (showFolderInput) {
+<!-- New Folder Input -->
+@if (showFolderInput) {
   <div class="folder-input-wrapper">
     <div class="folder-input-row">
       <input
@@ -95,7 +109,7 @@
         (ngModelChange)="folderError = null"
       />
       <button class="btn-create-folder" (click)="createFolder()">
-        Create &amp; Upload
+        Create
       </button>
       <button class="btn-cancel-folder" (click)="toggleFolderInput()">
         Cancel
@@ -105,204 +119,127 @@
       <p class="folder-error-msg">{{ folderError }}</p>
     }
   </div>
-  }
-
-  <!-- Folders Grid -->
-  @if (folders.length > 0) {
-  <div class="folders-grid">
-    @for (folder of folders; track folder.key) {
-    <div class="folder-card" (click)="openFolder(folder)">
-      <div class="folder-cover" [class.loading]="folder.coverImage && !isFolderCoverLoaded(folder.key)">
-        @if (folder.coverImage) {
-        <img
-          [src]="getFullUrl(folder.coverImage)"
-          [alt]="folder.key"
-          (load)="onFolderCoverLoad(folder.key)"
-          [class.loaded]="isFolderCoverLoaded(folder.key)"
-        />
-        } @else {
-        <div class="folder-cover-placeholder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 19a2 2 0 01-2 2H4a2 2 0
-                        01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-          </svg>
-        </div>
-        }
-        <div class="folder-cover-overlay"></div>
-        <span class="folder-count">
-          {{ folder.count }} photos
-        </span>
-
-        @if (isAdmin) {
-        <button class="folder-delete-btn" (click)="askDeleteFolder(folder.key, $event)" title="Delete folder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0
-                        01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-          </svg>
-        </button>
-        }
-      </div>
-      <div class="folder-info">
-        <h3>{{ folder.key }}</h3>
-      </div>
-    </div>
-    }
-  </div>
-  } @else if (!showFolderInput) {
-  <div class="empty-folders">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 19a2 2 0 01-2 2H4a2 2 0
-              01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-    </svg>
-    <p>No folders yet</p>
-    @if (isAdmin) {
-    <span>Create your first folder to start uploading</span>
-    }
-  </div>
-  }
-</div>
 }
 
-<!-- ══════════ IMAGES VIEW ══════════ -->
-@if (currentView === 'images') {
-<div class="content-section fade-up">
-  <div class="section-header">
-    <button class="btn-back" (click)="goBackToFolders()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
-      Back to Folders
-    </button>
-    <h2 class="folder-title">{{ selectedFolder }}</h2>
-    <span class="image-count">
-      {{ images.length }} photo{{ images.length !== 1 ? 's' : '' }}
-    </span>
-    @if (!loadingImages && images.length > 0) {
-      <button class="btn-download-all" (click)="downloadFolder()" title="Download all photos as ZIP">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Download All
-      </button>
-    }
-  </div>
-
-  @if (loadingImages) {
-  <div class="loading-state inline">
-    <div class="spinner"></div>
-  </div>
-  }
-
-  @if (!loadingImages && images.length > 0) {
-  <div class="images-grid">
-    @for (column of masonryColumns; track $index) {
-      <div class="masonry-column">
-        @for (image of column.images; track image._id) {
-        <div class="image-item" [class.is-cover]="isAdmin && isFolderCover(image)" (click)="openLightbox(image)">
-          <div class="image-skeleton" [class.is-loaded]="isImageLoaded(image._id)">
-            <img
-              [src]="getFullUrl(image.medium || image.url)"
-              [srcset]="getSrcset(image)"
-              sizes="(max-width:768px) 50vw, (max-width:1280px) 33vw, 25vw"
-              [alt]="image.originalName"
-              loading="lazy"
-              (load)="onImageLoad(image._id)"
-            />
-          </div>
-          <!-- Download button (always visible) -->
-          <button class="img-download-btn" (click)="downloadSingleImage(image, $event)" title="Download image">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
+<!-- Content (Active Folder) -->
+<div class="folders-container">
+  @if (selectedFolder) {
+    <section [id]="'folder-' + selectedFolder" class="folder-section">
+      <div class="section-header">
+        <h2>{{ selectedFolder }}</h2>
+        <div class="section-actions">
+          <button class="btn-download" (click)="downloadFolder()">
+            Download Folder
           </button>
           @if (isAdmin) {
-          <button
-            class="img-cover-btn"
-            [class.is-active]="isFolderCover(image)"
-            (click)="setAsFolderCover(image, $event)"
-            [title]="isFolderCover(image) ? 'Folder cover' : 'Set as folder cover'"
-          >
-            @if (isFolderCover(image)) {
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            } @else {
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            }
-          </button>
-          <button class="img-delete-btn" (click)="askDeleteImage(image);
-                               $event.stopPropagation()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0
-                          01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-          </button>
+            <button class="btn-upload" (click)="openFileDialog()">
+              Upload Images
+            </button>
+            <button class="btn-delete" (click)="askDeleteFolder()">
+              Delete Folder
+            </button>
           }
         </div>
-        }
       </div>
-    }
-  </div>
-  }
-
-  @if (!loadingImages && images.length === 0) {
-  <div class="empty-folders">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
-    </svg>
-    <p>No photos in this folder yet</p>
-    @if (isAdmin) {
-    <span>Click the + button to upload photos</span>
-    }
-  </div>
+      
+      @if (loadingImages) {
+        <div class="loading-state inline">
+          <div class="spinner"></div>
+          <p>Loading images...</p>
+        </div>
+      } @else if (images.length === 0) {
+        <div class="empty-folder">
+          <p>No images in this folder yet.</p>
+        </div>
+      } @else {
+        <div class="masonry-grid" [style.--col-count]="columnCount">
+          @for (col of masonryColumns; track $index) {
+          <div class="masonry-col">
+            @for (image of col.images; track image._id) {
+            <div class="image-item fade-up" (click)="openLightbox(image)">
+              <img
+                [src]="getFullUrl(image.thumbnail || image.url)"
+                [srcset]="getSrcset(image)"
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                [alt]="image.originalName"
+                loading="lazy"
+                (load)="onImageLoad(image._id)"
+                [class.loaded]="isImageLoaded(image._id)"
+              />
+              <div class="image-actions" (click)="openLightbox(image)">
+                <button class="btn-download-img" (click)="downloadSingleImage(image, $event)" title="Download Image">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </button>
+                <div class="admin-actions">
+                  @if (isAdmin) {
+                  <button
+                    class="btn-set-cover"
+                    [class.active]="isFolderCover(image)"
+                    (click)="setAsFolderCover(image, $event)"
+                  >
+                    {{ isFolderCover(image) ? 'Cover' : 'Set Cover' }}
+                  </button>
+                  <button class="btn-delete-img" (click)="askDeleteImage(image, $event)">
+                    Delete
+                  </button>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      }
+    </section>
   }
 </div>
 }
+
+<!-- Delete Confirmation Dialogs -->
+@if (showDeleteDialog && deleteTarget) {
+<app-confirm-dialog
+  title="Delete Image"
+  message="Are you sure you want to delete this image? This action cannot be undone."
+  confirmText="Delete Image"
+  [visible]="true"
+  [loading]="isDeletingImage"
+  (confirmed)="confirmDeleteImage()"
+  (cancelled)="cancelDeleteImage()"
+/>
 }
 
-<!-- Admin FAB upload (images view only) -->
-@if (isAdmin && currentView === 'images'
-&& selectedFolder && !uploadState.visible) {
-<button class="fab-upload" (click)="openFileDialog()">
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-</button>
+@if (showDeleteFolderDialog && deleteFolderTarget) {
+<app-confirm-dialog
+  title="Delete Folder"
+  message="Are you sure you want to delete this folder and ALL its images? This action cannot be undone."
+  confirmText="Delete Folder"
+  [visible]="true"
+  [loading]="isDeletingFolder"
+  (confirmed)="confirmDeleteFolder()"
+  (cancelled)="cancelDeleteFolder()"
+/>
 }
 
-<!-- Lightbox -->
-<app-image-lightbox [visible]="lightboxOpen" [slides]="lightboxSlides" [startIndex]="lightboxStart" [showDownload]="true"
-  (closed)="closeLightbox()" (downloadRequested)="downloadLightboxImage($event)" />
-
-<!-- Delete Image Dialog -->
-<app-confirm-dialog [visible]="showDeleteDialog" [loading]="isDeletingImage" title="Delete Image"
-  message="Delete this image? This cannot be undone." confirmText="Delete" (confirmed)="confirmDeleteImage()"
-  (cancelled)="cancelDeleteImage()" />
-
-<!-- Delete Folder Dialog -->
-<app-confirm-dialog [visible]="showDeleteFolderDialog" [loading]="isDeletingFolder" title="Delete Folder"
-  message="Delete this folder and ALL its images? This cannot be undone." confirmText="Delete All"
-  (confirmed)="confirmDeleteFolder()" (cancelled)="cancelDeleteFolder()" />
+<!-- Lightbox Modal -->
+@if (lightboxOpen) {
+<app-image-lightbox
+  [slides]="lightboxSlides"
+  [startIndex]="lightboxStart"
+  [visible]="true"
+  [showDownload]="true"
+  (closed)="closeLightbox()"
+  (downloadRequested)="downloadLightboxImage($event)"
+/>
+}
 
 <!-- Download Progress Modal -->
-<app-download-modal [state]="downloadState" (dismissed)="onDownloadDismissed()" (retryFailed)="onRetryFailedDownloads($event)" />
+<app-download-modal 
+  [state]="downloadState" 
+  (dismissed)="onDownloadDismissed()"
+  (retryFailed)="onRetryFailedDownloads($event)"
+/>
