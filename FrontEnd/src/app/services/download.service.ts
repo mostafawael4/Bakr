@@ -145,38 +145,19 @@ export class DownloadService {
     }
   }
 
-  /**
-   * Save a blob to disk.
-   * Uses <a download> with blob URL.
-   * Falls back to window.open for iOS Safari compatibility.
-   */
   private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
 
-    // Detect iOS Safari — it doesn't support <a download> for blob URLs
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOS) {
-      // On iOS, open the blob in a new tab so the user can long-press to save
-      // or use the share sheet
-      const newTab = window.open(url, '_blank');
-      if (!newTab) {
-        // If popup blocked, fall back to navigating the current window
-        window.location.href = url;
-      }
-      // Revoke after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } else {
-      // Standard approach for Android/Desktop
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    }
+    // Modern iOS Safari (13+) and all other browsers fully support <a download>
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Revoke after a delay to allow download to start
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 }
