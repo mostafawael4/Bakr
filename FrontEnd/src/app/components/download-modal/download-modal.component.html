@@ -67,6 +67,9 @@
     <!-- Actions -->
     @if (state.done) {
       <div class="dl-actions">
+        @if (state.finalBlobUrl) {
+          <a [href]="state.finalBlobUrl" [download]="state.finalFilename" class="dl-save-btn" (click)="dismiss()">Save to Device</a>
+        }
         @if (state.failedImages.length > 0) {
           <button type="button" class="dl-retry-btn" (click)="onRetryFailed()">Retry Failed</button>
         }

@@ -10,6 +10,8 @@ export interface DownloadModalState {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
+  finalBlobUrl?: string;
+  finalFilename?: string;
 }
 
 @Component({

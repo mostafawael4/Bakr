@@ -132,7 +132,11 @@ export class DownloadService {
 
         const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
         const zipName = `${folderName.replace(/[^a-zA-Z0-9-_ ]/g, '_')}.zip`;
-        this.saveBlob(zipBlob, zipName);
+        
+        state.finalBlobUrl = URL.createObjectURL(zipBlob);
+        state.finalFilename = zipName;
+        // Notice: We DO NOT call this.saveBlob() anymore. 
+        // We wait for the user to explicitly tap the "Save to Device" button.
       }
 
       state.percent = 100;
