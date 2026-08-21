@@ -673,7 +673,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   onDownloadDismissed(): void {
-    this.downloadState = { ...this.downloadState, visible: false };
+    if (this.downloadState.finalBlobUrl) {
+      URL.revokeObjectURL(this.downloadState.finalBlobUrl);
+    }
+    this.downloadState = { ...this.downloadState, visible: false, finalBlobUrl: undefined, finalFilename: undefined };
   }
 
   onRetryFailedDownloads(failedImages: any[]): void {
