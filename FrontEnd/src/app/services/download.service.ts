@@ -11,6 +11,8 @@ export interface DownloadProgress {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
+  finalBlobUrl?: string;
+  finalFilename?: string;
 }
 
 @Injectable({ providedIn: 'root' })
