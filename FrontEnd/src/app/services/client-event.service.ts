@@ -26,6 +26,7 @@ export interface ClientEventFolder {
   count: number;
   coverImage: string | null;
   coverImageId?: string | null;
+  hasZip?: boolean;
 }
 
 export interface ClientEventImage {

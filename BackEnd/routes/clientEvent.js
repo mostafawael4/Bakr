@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import archiver from 'archiver';
-import { Readable } from 'stream';
+import { Readable, PassThrough } from 'stream';
+import { ZipArchive } from 'archiver';
 import ClientEvent from '../models/ClientEvent.js';
 import ClientEventImage from '../models/ClientEventImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
 import Credentials from '../config/Credentials.js';
-import { deleteFromB2, getPresignedDownloadUrl, resolveImageUrls } from '../services/b2.service.js';
+import { deleteFromB2, getPresignedDownloadUrl, resolveImageUrls, uploadStreamToB2 } from '../services/b2.service.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
@@ -22,6 +22,7 @@ async function resolveFolderCover(eventId, folderKey, coverImageId) {
 async function buildFolders(event) {
   const keys = await ClientEventImage.distinct('folderKey', { eventId: event._id });
   const covers = event.folderCovers || {};
+  const zips = event.folderZips || {};
 
   return Promise.all(
     keys.map(async (key) => {
@@ -38,6 +39,7 @@ async function buildFolders(event) {
         count,
         coverImage: coverUrl,
         coverImageId: coverImg ? coverImg._id.toString() : null,
+        hasZip: !!zips[key],
       };
     })
   );
@@ -609,22 +611,33 @@ router.post('/:eventId/folders/:folderKey/zip', requireAdminAuth, async (req, re
     if (!images.length) return res.status(404).json({ ok: false, message: 'Folder is empty' });
 
     const zipKey = `zips/${eventId}/${folderKey}.zip`;
-    const archive = archiver('zip', { zlib: { level: 0 } });
+    const archive = new ZipArchive({ zlib: { level: 0 } });
     
-    // Instead of responding, pipe the archive to B2 upload
-    const uploadPromise = import('../services/b2.service.js').then(m => m.uploadStreamToB2(zipKey, archive));
+    // Pipe the archive through a PassThrough stream to guarantee AWS SDK compatibility
+    const pass = new PassThrough();
+    archive.pipe(pass);
+
+    // Pipe the archive to B2 upload
+    const uploadPromise = uploadStreamToB2(zipKey, pass).catch(err => {
+      logger.error(`[ZIP Upload] B2 Upload error: ${err.stack || err.message}`);
+      throw err;
+    });
 
     archive.on('error', (err) => {
-      logger.error(`[ZIP Generate] Archive error: ${err.message}`);
+      logger.error(`[ZIP Generate] Archive error: ${err.stack || err.message}`);
     });
 
     for (const image of images) {
       try {
         const url = await getPresignedDownloadUrl(image.url);
         const response = await fetch(url);
-        if (response.ok && response.body) {
-          const nodeStream = Readable.fromWeb(response.body);
-          archive.append(nodeStream, { name: image.originalName || image.filename });
+        if (response.ok) {
+          // Read single image into a buffer (safe for 512MB RAM since it's sequential, one by one)
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          archive.append(buffer, { name: image.originalName || image.filename });
+        } else {
+          logger.error(`[ZIP Generate] fetch failed for ${image.url}: ${response.status} ${response.statusText}`);
         }
       } catch (err) {
         logger.error(`[ZIP Generate] Failed to fetch image ${image.url}: ${err.message}`);
@@ -632,7 +645,12 @@ router.post('/:eventId/folders/:folderKey/zip', requireAdminAuth, async (req, re
     }
 
     await archive.finalize();
-    await uploadPromise;
+    
+    try {
+      await uploadPromise;
+    } catch (uploadErr) {
+      return res.status(500).json({ ok: false, message: 'Failed to upload ZIP to B2. Check server logs.' });
+    }
 
     // Save the zipKey to the event document
     const folderZips = event.folderZips || {};
@@ -643,6 +661,7 @@ router.post('/:eventId/folders/:folderKey/zip', requireAdminAuth, async (req, re
 
     res.json({ ok: true, message: 'ZIP generated and uploaded to B2' });
   } catch (err) {
+    logger.error(`[ZIP Generate] Fatal error: ${err.stack || err.message}`);
     next(err);
   }
 });

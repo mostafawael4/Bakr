@@ -68,7 +68,11 @@ app.use('/api', apiRouter);
 
 app.use((err, req, res, next) => {
   logger.error(err.stack || err.message || err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    details: err.message, 
+    stack: err.stack 
+  });
 });
 
 async function bootstrap() {

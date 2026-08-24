@@ -123,17 +123,31 @@
 
 <!-- Content (Active Folder) -->
 <div class="folders-container">
+
+  <!-- Notification Toast -->
+  @if (notificationMessage) {
+    <div class="notification-toast" [ngClass]="notificationType">
+      {{ notificationMessage }}
+      <button class="close-btn" (click)="notificationMessage = null">&times;</button>
+    </div>
+  }
+
   @if (selectedFolder) {
     <section [id]="'folder-' + selectedFolder" class="folder-section">
       <div class="section-header">
         <h2>{{ selectedFolder }}</h2>
         <div class="section-actions">
-          <button class="btn-download" (click)="downloadFolder()">
-            Download Folder
+          <button 
+            class="btn-download" 
+            [class.disabled]="!isAdmin && !activeFolderObj?.hasZip"
+            (click)="downloadFolder()"
+            [title]="!isAdmin && !activeFolderObj?.hasZip ? 'ZIP not ready yet' : ''"
+          >
+            {{ (!isAdmin && !activeFolderObj?.hasZip) ? 'ZIP Not Ready' : 'Download Folder' }}
           </button>
           @if (isAdmin) {
             <button class="btn-generate" (click)="generateFolderZip()" [disabled]="isGeneratingZip">
-              {{ isGeneratingZip ? 'Generating...' : 'Generate ZIP' }}
+              {{ isGeneratingZip ? 'Generating...' : (activeFolderObj?.hasZip ? 'Regenerate ZIP' : 'Generate ZIP') }}
             </button>
             <button class="btn-upload" (click)="openFileDialog()">
               Upload Images
