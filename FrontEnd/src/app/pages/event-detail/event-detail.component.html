@@ -132,6 +132,9 @@
             Download Folder
           </button>
           @if (isAdmin) {
+            <button class="btn-generate" (click)="generateFolderZip()" [disabled]="isGeneratingZip">
+              {{ isGeneratingZip ? 'Generating...' : 'Generate ZIP' }}
+            </button>
             <button class="btn-upload" (click)="openFileDialog()">
               Upload Images
             </button>

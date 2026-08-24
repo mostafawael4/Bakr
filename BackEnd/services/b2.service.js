@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectVersionsCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Upload } from '@aws-sdk/lib-storage';
 import Credentials from '../config/Credentials.js';
 
 // Setup S3 Client for Backblaze B2
@@ -41,6 +42,31 @@ function buildPublicBase() {
 }
 
 const PUBLIC_BASE = buildPublicBase();
+
+/**
+ * Uploads a readable stream to B2.
+ * @param {string} key The destination key
+ * @param {Readable} stream The stream (e.g. archiver output)
+ * @param {string} contentType The MIME type
+ * @returns {Promise<void>}
+ */
+export async function uploadStreamToB2(key, stream, contentType = 'application/zip') {
+  const upload = new Upload({
+    client: s3,
+    params: {
+      Bucket: Credentials.B2_BUCKET_NAME,
+      Key: key,
+      Body: stream,
+      ContentType: contentType,
+    },
+    // Queue size controls how many parts are uploaded concurrently
+    queueSize: 4, 
+    // Part size determines the size of each chunk (5MB min for S3 multipart)
+    partSize: 5 * 1024 * 1024, 
+  });
+
+  await upload.done();
+}
 
 /**
  * Generate a presigned PUT URL for browser direct upload.

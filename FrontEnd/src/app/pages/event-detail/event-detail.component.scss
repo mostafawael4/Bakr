@@ -376,6 +376,20 @@
           color: var(--color-interactive);
         }
         
+        &.btn-download, &.btn-generate {
+          background-color: var(--color-interactive);
+          color: var(--color-surface);
+          border: 1px solid transparent;
+
+          &:hover:not(:disabled) {
+            background-color: var(--color-interactive-hover);
+          }
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+        
         &.btn-upload {
           background-color: var(--color-interactive);
           color: var(--color-surface);
