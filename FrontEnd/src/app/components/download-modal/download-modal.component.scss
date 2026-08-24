@@ -177,8 +177,6 @@
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s;
-  text-decoration: none;
-  display: inline-block;
 
   &:hover {
     background-color: var(--color-interactive-hover);

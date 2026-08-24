@@ -11,9 +11,7 @@ export interface DownloadProgress {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
-  finalBlobUrl?: string;
-  finalFilename?: string;
-  
+  readyToSave: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +19,10 @@ export class DownloadService {
   private platformId = inject(PLATFORM_ID);
 
   progress$ = new Subject<DownloadProgress>();
+
+  /** Blob + filename held privately — never exposed to Angular templates */
+  private pendingBlob: Blob | null = null;
+  private pendingFilename: string = '';
 
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -81,6 +83,7 @@ export class DownloadService {
       done: false,
       error: null,
       failedImages: [],
+      readyToSave: false,
     };
     this.progress$.next({ ...state });
 
@@ -135,11 +138,11 @@ export class DownloadService {
 
         const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
         const zipName = `${folderName.replace(/[^a-zA-Z0-9-_ ]/g, '_')}.zip`;
-        
-        state.finalBlobUrl = URL.createObjectURL(zipBlob);
-        state.finalFilename = zipName;
-        // Notice: We DO NOT call this.saveBlob() anymore. 
-        // We wait for the user to explicitly tap the "Save to Device" button.
+
+        // Store blob privately in the service — NOT in Angular state
+        this.pendingBlob = zipBlob;
+        this.pendingFilename = zipName;
+        state.readyToSave = true;
       }
 
       state.percent = 100;
@@ -150,6 +153,62 @@ export class DownloadService {
       state.done = true;
       this.progress$.next({ ...state });
     }
+  }
+
+  /**
+   * Called when the user taps "Save to Device".
+   * Uses navigator.share() on mobile (native share sheet) for reliability,
+   * falls back to <a download>.click() on desktop.
+   */
+  async triggerSave(): Promise<void> {
+    if (!this.pendingBlob || !this.pendingFilename) return;
+
+    const blob = this.pendingBlob;
+    const filename = this.pendingFilename;
+
+    // Try Web Share API first (works natively on iOS Safari + Android Chrome)
+    if (this.canUseWebShare()) {
+      try {
+        const file = new File([blob], filename, { type: 'application/zip' });
+        await navigator.share({ files: [file] });
+        this.releasePendingBlob();
+        return;
+      } catch (err: any) {
+        // User cancelled the share sheet, or share failed — fall through to <a download>
+        if (err?.name === 'AbortError') {
+          // User cancelled — don't fallback, just return
+          return;
+        }
+      }
+    }
+
+    // Fallback: programmatic <a download> click (works on desktop + Android)
+    this.saveBlob(blob, filename);
+    this.releasePendingBlob();
+  }
+
+  /**
+   * Clean up the pending blob when the modal is dismissed.
+   */
+  cleanup(): void {
+    this.releasePendingBlob();
+  }
+
+  private canUseWebShare(): boolean {
+    if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) {
+      return false;
+    }
+    try {
+      const testFile = new File([''], 'test.zip', { type: 'application/zip' });
+      return navigator.canShare({ files: [testFile] });
+    } catch {
+      return false;
+    }
+  }
+
+  private releasePendingBlob(): void {
+    this.pendingBlob = null;
+    this.pendingFilename = '';
   }
 
   private saveBlob(blob: Blob, filename: string): void {

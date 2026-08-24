@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://bakr-backend-production-6c3a.up.railway.app/api',
+  apiUrl: 'http://localhost:4000/api',
 };

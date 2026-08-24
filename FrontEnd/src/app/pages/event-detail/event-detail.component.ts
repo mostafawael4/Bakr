@@ -96,6 +96,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     done: false,
     error: null,
     failedImages: [],
+    readyToSave: false,
   };
 
   private wsSub: Subscription | null = null;
@@ -673,10 +674,12 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   onDownloadDismissed(): void {
-    if (this.downloadState.finalBlobUrl) {
-      URL.revokeObjectURL(this.downloadState.finalBlobUrl);
-    }
-    this.downloadState = { ...this.downloadState, visible: false, finalBlobUrl: undefined, finalFilename: undefined };
+    this.downloadService.cleanup();
+    this.downloadState = { ...this.downloadState, visible: false, readyToSave: false };
+  }
+
+  onDownloadSave(): void {
+    this.downloadService.triggerSave();
   }
 
   onRetryFailedDownloads(failedImages: any[]): void {
