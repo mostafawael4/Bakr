@@ -167,7 +167,7 @@ export class DownloadService {
     const filename = this.pendingFilename;
 
     // Try Web Share API first (works natively on iOS Safari + Android Chrome)
-    if (this.canUseWebShare()) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         const file = new File([blob], filename, { type: 'application/zip' });
         await navigator.share({ files: [file] });
@@ -183,6 +183,7 @@ export class DownloadService {
     }
 
     // Fallback: programmatic <a download> click (works on desktop + Android)
+    // On iOS Safari, it will use window.location.assign
     this.saveBlob(blob, filename);
     this.releasePendingBlob();
   }
@@ -194,18 +195,6 @@ export class DownloadService {
     this.releasePendingBlob();
   }
 
-  private canUseWebShare(): boolean {
-    if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) {
-      return false;
-    }
-    try {
-      const testFile = new File([''], 'test.zip', { type: 'application/zip' });
-      return navigator.canShare({ files: [testFile] });
-    } catch {
-      return false;
-    }
-  }
-
   private releasePendingBlob(): void {
     this.pendingBlob = null;
     this.pendingFilename = '';
@@ -214,16 +203,25 @@ export class DownloadService {
   private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
 
-    // Modern iOS Safari (13+) and all other browsers fully support <a download>
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const isIOS = typeof window !== 'undefined' && 
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+    if (isIOS) {
+      // On iOS Safari, a.click() with large blob URLs can cause the page to crash/reload.
+      // window.location.assign(url) triggers the native download prompt safely.
+      window.location.assign(url);
+    } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
     
     // Revoke after a delay to allow download to start
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    setTimeout(() => URL.revokeObjectURL(url), 20_000);
   }
 }
+
