@@ -717,41 +717,23 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   downloadFolder(): void {
     if (!this.selectedFolder || !this.images.length) return;
 
-    if (!this.isAdmin && !this.activeFolderObj?.hasZip) {
-      this.showNotification('This folder is not ready for download yet. Please contact the photographer.', 'error');
+    if (!this.activeFolderObj?.hasZip) {
+      this.showNotification('This folder is not ready for download yet. Please generate the ZIP first.', 'error');
       return;
     }
 
     const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('bakr_token') : '';
     const downloadUrl = `${environment.apiUrl}/client-events/${this.eventId}/folders/${this.selectedFolder}/download${token ? '?token=' + encodeURIComponent(token) : ''}`;
-
-    this.downloadState = {
-      visible: true,
-      folderName: this.selectedFolder,
-      totalFiles: 1,
-      downloadedFiles: 1,
-      percent: 100,
-      done: true,
-      error: null,
-      failedImages: [],
-      readyToSave: true,
-    };
     
     if (isPlatformBrowser(this.platformId)) {
       window.location.assign(downloadUrl);
     }
-      
-    // Auto dismiss the modal after 5 seconds
-    setTimeout(() => {
-      this.onDownloadDismissed();
-    }, 5000);
   }
 
   onDownloadDismissed(): void {
     this.downloadService.cleanup();
     this.downloadState = { ...this.downloadState, visible: false, readyToSave: false };
   }
-
   onDownloadSave(): void {
     this.downloadService.triggerSave();
   }
