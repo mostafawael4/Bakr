@@ -37,12 +37,19 @@ export class DownloadModalComponent {
   @Output() retryFailed = new EventEmitter<{ url: string; originalName: string }[]>();
   @Output() save = new EventEmitter<void>();
 
+  minimized = false;
+
   dismiss(): void {
+    this.minimized = false;
     this.dismissed.emit();
   }
 
   onSave(): void {
     this.save.emit();
+  }
+
+  toggleMinimize(): void {
+    this.minimized = !this.minimized;
   }
 
   onRetryFailed(): void {
