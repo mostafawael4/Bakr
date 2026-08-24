@@ -639,19 +639,38 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  get activeFolderObj() {
+    return this.folders.find(f => f.key === this.selectedFolder);
+  }
+
   isGeneratingZip = false;
 
+  notificationMessage: string | null = null;
+  notificationType: 'success' | 'error' | 'info' = 'info';
+  
+  showNotification(message: string, type: 'success' | 'error' | 'info') {
+    this.notificationMessage = message;
+    this.notificationType = type;
+    setTimeout(() => this.notificationMessage = null, 5000);
+  }
+
   generateFolderZip(): void {
-    if (!this.selectedFolder || this.isGeneratingZip) return;
+    if (!this.selectedFolder) return;
     this.isGeneratingZip = true;
+    this.showNotification('Preparing ZIP file. This may take a minute...', 'info');
+
     this.clientEventService.generateFolderZip(this.eventId, this.selectedFolder).subscribe({
       next: (res) => {
         this.isGeneratingZip = false;
-        alert(res.message || 'ZIP generated and ready for clients to download.');
+        this.showNotification('ZIP generated and ready for clients to download!', 'success');
+        
+        // Update local folder state
+        const folder = this.activeFolderObj;
+        if (folder) folder.hasZip = true;
       },
       error: (err) => {
         this.isGeneratingZip = false;
-        alert(err.error?.message || 'Failed to generate ZIP.');
+        this.showNotification(err.error?.message || 'Failed to generate ZIP. Please check logs.', 'error');
       }
     });
   }
@@ -682,14 +701,16 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   downloadFolder(): void {
-    if (!this.selectedFolder) return;
-    
-    // Construct the backend download URL
-    const token = typeof window !== 'undefined' ? localStorage.getItem('bakr_token') : '';
-    const apiUrl = environment.apiUrl;
-    const downloadUrl = `${apiUrl}/client-events/${this.eventId}/folders/${encodeURIComponent(this.selectedFolder)}/download?token=${token}`;
-    
-    // Show a quick modal that we are initiating the download
+    if (!this.selectedFolder || !this.images.length) return;
+
+    if (!this.isAdmin && !this.activeFolderObj?.hasZip) {
+      this.showNotification('This folder is not ready for download yet. Please contact the photographer.', 'error');
+      return;
+    }
+
+    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('bakr_token') : '';
+    const downloadUrl = `${environment.apiUrl}/client-events/${this.eventId}/folders/${this.selectedFolder}/download${token ? '?token=' + encodeURIComponent(token) : ''}`;
+
     this.downloadState = {
       visible: true,
       folderName: this.selectedFolder,
@@ -699,18 +720,17 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       done: true,
       error: null,
       failedImages: [],
-      readyToSave: false, // Don't show save button, browser does it automatically
+      readyToSave: true,
     };
-
-    // Trigger the native browser download
-    if (this.isBrowser) {
+    
+    if (isPlatformBrowser(this.platformId)) {
       window.location.assign(downloadUrl);
-      
-      // Auto dismiss the modal after 5 seconds
-      setTimeout(() => {
-        this.onDownloadDismissed();
-      }, 5000);
     }
+      
+    // Auto dismiss the modal after 5 seconds
+    setTimeout(() => {
+      this.onDownloadDismissed();
+    }, 5000);
   }
 
   onDownloadDismissed(): void {
