@@ -46,9 +46,13 @@ export class DownloadModalComponent {
     this.dismissed.emit();
   }
 
-  async onSave(): Promise<void> {
+  onSave(): void {
     this.saving = true;
     this.save.emit();
+    // Stop the spinner after the browser initiates the download
+    setTimeout(() => {
+      this.saving = false;
+    }, 1500);
   }
 
   toggleMinimize(): void {

@@ -157,35 +157,17 @@ export class DownloadService {
 
   /**
    * Called when the user taps "Save to Device".
-   * Uses navigator.share() on mobile (native share sheet) for reliability,
-   * falls back to <a download>.click() on desktop.
+   * This MUST be entirely synchronous so iOS Safari registers it as a direct user gesture,
+   * otherwise it may kill the tab/reload the page.
    */
-  async triggerSave(): Promise<void> {
+  triggerSave(): void {
     if (!this.pendingBlob || !this.pendingFilename) return;
 
     const blob = this.pendingBlob;
     const filename = this.pendingFilename;
 
-    // Try Web Share API first (works natively on iOS Safari + Android Chrome)
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        const file = new File([blob], filename, { type: 'application/zip' });
-        await navigator.share({ files: [file] });
-        this.releasePendingBlob();
-        return;
-      } catch (err: any) {
-        // User cancelled the share sheet, or share failed — fall through to <a download>
-        if (err?.name === 'AbortError') {
-          // User cancelled — don't fallback, just return
-          return;
-        }
-      }
-    }
-
-    // Fallback: programmatic <a download> click (works on desktop + Android)
-    // On iOS Safari, it will use window.location.assign
     this.saveBlob(blob, filename);
-    this.releasePendingBlob();
+    // Don't release the blob immediately; let the browser process the download first
   }
 
   /**
@@ -203,22 +185,13 @@ export class DownloadService {
   private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
 
-    const isIOS = typeof window !== 'undefined' && 
-      (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-
-    if (isIOS) {
-      // On iOS Safari, a.click() with large blob URLs can cause the page to crash/reload.
-      // window.location.assign(url) triggers the native download prompt safely.
-      window.location.assign(url);
-    } else {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     
     // Revoke after a delay to allow download to start
     setTimeout(() => URL.revokeObjectURL(url), 20_000);
