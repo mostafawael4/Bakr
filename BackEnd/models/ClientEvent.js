@@ -12,6 +12,7 @@ const clientEventSchema = new mongoose.Schema({
   heroFocalY: { type: Number, default: 50, min: 0, max: 100 },
   isActive: { type: Boolean, default: true },
   folderCovers: { type: mongoose.Schema.Types.Mixed, default: {} },
+  folderZips: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
 });
 

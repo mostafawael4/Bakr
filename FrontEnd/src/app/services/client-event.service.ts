@@ -118,6 +118,14 @@ export class ClientEventService {
     );
   }
 
+  generateFolderZip(eventId: string, folderKey: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.post<{ ok: boolean; message: string }>(
+      `${this.url}/${eventId}/folders/${encodeURIComponent(folderKey)}/zip`,
+      {},
+      { withCredentials: true }
+    );
+  }
+
   /* ── Client — access ── */
 
   accessEvent(eventId: string, password: string): Observable<{ ok: boolean; event: any; token?: string }> {

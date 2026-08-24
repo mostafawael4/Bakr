@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import archiver from 'archiver';
+import { Readable } from 'stream';
 import ClientEvent from '../models/ClientEvent.js';
 import ClientEventImage from '../models/ClientEventImage.js';
 import { requireAdminAuth } from '../middleware/auth.js';
@@ -84,10 +86,16 @@ function requireClientAccess(req, res, next) {
     return next();
   }
 
-  // 2. JWT token check
+  // 2. JWT token check (via header or query param)
+  let token = null;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  }
+
+  if (token) {
     try {
       const decoded = jwt.verify(token, Credentials.SESSION_SECRET || 'dev-secret-change-me');
       
@@ -584,6 +592,82 @@ router.delete('/:eventId/folders/:folderKey', requireAdminAuth, async (req, res,
     });
 
     res.json({ ok: true, message: `Folder "${req.params.folderKey}" and all its images deleted from B2` });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST Generate a ZIP for a folder and upload it to B2 (Admin Only)
+router.post('/:eventId/folders/:folderKey/zip', requireAdminAuth, async (req, res, next) => {
+  try {
+    const { eventId, folderKey } = req.params;
+    
+    const event = await ClientEvent.findById(eventId);
+    if (!event) return res.status(404).json({ ok: false, message: 'Event not found' });
+
+    const images = await ClientEventImage.find({ eventId, folderKey }).lean();
+    if (!images.length) return res.status(404).json({ ok: false, message: 'Folder is empty' });
+
+    const zipKey = `zips/${eventId}/${folderKey}.zip`;
+    const archive = archiver('zip', { zlib: { level: 0 } });
+    
+    // Instead of responding, pipe the archive to B2 upload
+    const uploadPromise = import('../services/b2.service.js').then(m => m.uploadStreamToB2(zipKey, archive));
+
+    archive.on('error', (err) => {
+      logger.error(`[ZIP Generate] Archive error: ${err.message}`);
+    });
+
+    for (const image of images) {
+      try {
+        const url = await getPresignedDownloadUrl(image.url);
+        const response = await fetch(url);
+        if (response.ok && response.body) {
+          const nodeStream = Readable.fromWeb(response.body);
+          archive.append(nodeStream, { name: image.originalName || image.filename });
+        }
+      } catch (err) {
+        logger.error(`[ZIP Generate] Failed to fetch image ${image.url}: ${err.message}`);
+      }
+    }
+
+    await archive.finalize();
+    await uploadPromise;
+
+    // Save the zipKey to the event document
+    const folderZips = event.folderZips || {};
+    folderZips[folderKey] = zipKey;
+    event.folderZips = folderZips;
+    event.markModified('folderZips');
+    await event.save();
+
+    res.json({ ok: true, message: 'ZIP generated and uploaded to B2' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET Redirect to the pre-generated ZIP for downloading (Client)
+router.get('/:eventId/folders/:folderKey/download', requireClientAccess, async (req, res, next) => {
+  try {
+    const { eventId, folderKey } = req.params;
+    
+    const event = await ClientEvent.findById(eventId);
+    if (!event) return res.status(404).send('Event not found');
+
+    const zipKey = event.folderZips?.[folderKey];
+    if (!zipKey) {
+      return res.status(404).send('ZIP file not found. Please contact the photographer to generate it.');
+    }
+
+    // Get the download URL (presigned or public)
+    const url = await getPresignedDownloadUrl(zipKey);
+    if (!url) {
+      return res.status(500).send('Failed to generate download link');
+    }
+
+    // Redirect the browser to natively download the file
+    res.redirect(url);
   } catch (err) {
     next(err);
   }

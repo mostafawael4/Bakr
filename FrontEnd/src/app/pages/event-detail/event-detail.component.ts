@@ -639,6 +639,23 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  isGeneratingZip = false;
+
+  generateFolderZip(): void {
+    if (!this.selectedFolder || this.isGeneratingZip) return;
+    this.isGeneratingZip = true;
+    this.clientEventService.generateFolderZip(this.eventId, this.selectedFolder).subscribe({
+      next: (res) => {
+        this.isGeneratingZip = false;
+        alert(res.message || 'ZIP generated and ready for clients to download.');
+      },
+      error: (err) => {
+        this.isGeneratingZip = false;
+        alert(err.error?.message || 'Failed to generate ZIP.');
+      }
+    });
+  }
+
   /* ── Lightbox ── */
   openLightbox(image: ClientEventImage): void {
     const idx = this.images.findIndex((img) => img._id === image._id);
@@ -665,12 +682,35 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   downloadFolder(): void {
-    if (!this.images.length || !this.selectedFolder) return;
-    const folderImages = this.images.map((img) => ({
-      url: this.getFullUrl(img.url),
-      originalName: img.originalName,
-    }));
-    this.downloadService.downloadFolderAsZip(folderImages, this.selectedFolder);
+    if (!this.selectedFolder) return;
+    
+    // Construct the backend download URL
+    const token = typeof window !== 'undefined' ? localStorage.getItem('bakr_token') : '';
+    const apiUrl = environment.apiUrl;
+    const downloadUrl = `${apiUrl}/client-events/${this.eventId}/folders/${encodeURIComponent(this.selectedFolder)}/download?token=${token}`;
+    
+    // Show a quick modal that we are initiating the download
+    this.downloadState = {
+      visible: true,
+      folderName: this.selectedFolder,
+      totalFiles: 1,
+      downloadedFiles: 1,
+      percent: 100,
+      done: true,
+      error: null,
+      failedImages: [],
+      readyToSave: false, // Don't show save button, browser does it automatically
+    };
+
+    // Trigger the native browser download
+    if (this.isBrowser) {
+      window.location.assign(downloadUrl);
+      
+      // Auto dismiss the modal after 5 seconds
+      setTimeout(() => {
+        this.onDownloadDismissed();
+      }, 5000);
+    }
   }
 
   onDownloadDismissed(): void {
