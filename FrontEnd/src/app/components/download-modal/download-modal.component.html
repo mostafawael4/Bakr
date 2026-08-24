@@ -105,7 +105,14 @@
       @if (state.done) {
         <div class="dl-actions">
           @if (state.readyToSave) {
-            <button type="button" class="dl-save-btn" (click)="onSave()">Save to Device</button>
+            <button type="button" class="dl-save-btn" [class.dl-save-btn--saving]="saving" [disabled]="saving" (click)="onSave()">
+              @if (saving) {
+                <span class="dl-btn-spinner" aria-hidden="true"></span>
+                Saving…
+              } @else {
+                Save to Device
+              }
+            </button>
           }
           @if (state.failedImages.length > 0) {
             <button type="button" class="dl-retry-btn" (click)="onRetryFailed()">Retry Failed</button>

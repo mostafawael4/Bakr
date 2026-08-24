@@ -220,10 +220,29 @@
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--color-interactive-hover);
   }
+
+  &--saving {
+    opacity: 0.85;
+    cursor: not-allowed;
+  }
+}
+
+.dl-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--color-surface);
+  animation: dlSpin 0.7s linear infinite;
+  flex-shrink: 0;
 }
 
 .dl-retry-btn {

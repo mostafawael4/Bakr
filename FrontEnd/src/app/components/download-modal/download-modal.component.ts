@@ -38,13 +38,16 @@ export class DownloadModalComponent {
   @Output() save = new EventEmitter<void>();
 
   minimized = false;
+  saving = false;
 
   dismiss(): void {
     this.minimized = false;
+    this.saving = false;
     this.dismissed.emit();
   }
 
-  onSave(): void {
+  async onSave(): Promise<void> {
+    this.saving = true;
     this.save.emit();
   }
 
