@@ -10,8 +10,7 @@ export interface DownloadModalState {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
-  finalBlobUrl?: string;
-  finalFilename?: string;
+  readyToSave: boolean;
 }
 
 @Component({
@@ -31,13 +30,19 @@ export class DownloadModalComponent {
     done: false,
     error: null,
     failedImages: [],
+    readyToSave: false,
   };
 
   @Output() dismissed = new EventEmitter<void>();
   @Output() retryFailed = new EventEmitter<{ url: string; originalName: string }[]>();
+  @Output() save = new EventEmitter<void>();
 
   dismiss(): void {
     this.dismissed.emit();
+  }
+
+  onSave(): void {
+    this.save.emit();
   }
 
   onRetryFailed(): void {
