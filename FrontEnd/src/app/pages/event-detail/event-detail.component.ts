@@ -644,6 +644,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   isGeneratingZip = false;
+  showRegenerateDialog = false;
 
   notificationMessage: string | null = null;
   notificationType: 'success' | 'error' | 'info' = 'info';
@@ -656,6 +657,19 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   generateFolderZip(): void {
     if (!this.selectedFolder) return;
+    
+    if (this.activeFolderObj?.hasZip) {
+      this.showRegenerateDialog = true;
+      return;
+    }
+    
+    this.confirmRegenerateZip();
+  }
+
+  confirmRegenerateZip(): void {
+    if (!this.selectedFolder) return;
+    
+    this.showRegenerateDialog = false;
     this.isGeneratingZip = true;
     this.showNotification('Preparing ZIP file. This may take a minute...', 'info');
 
