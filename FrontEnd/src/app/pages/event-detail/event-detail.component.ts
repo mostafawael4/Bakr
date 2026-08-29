@@ -96,6 +96,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     done: false,
     error: null,
     failedImages: [],
+    readyToSave: false,
   };
 
   private wsSub: Subscription | null = null;
@@ -638,6 +639,56 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  get activeFolderObj() {
+    return this.folders.find(f => f.key === this.selectedFolder);
+  }
+
+  isGeneratingZip = false;
+  showRegenerateDialog = false;
+
+  notificationMessage: string | null = null;
+  notificationType: 'success' | 'error' | 'info' = 'info';
+  
+  showNotification(message: string, type: 'success' | 'error' | 'info') {
+    this.notificationMessage = message;
+    this.notificationType = type;
+    setTimeout(() => this.notificationMessage = null, 5000);
+  }
+
+  generateFolderZip(): void {
+    if (!this.selectedFolder) return;
+    
+    if (this.activeFolderObj?.hasZip) {
+      this.showRegenerateDialog = true;
+      return;
+    }
+    
+    this.confirmRegenerateZip();
+  }
+
+  confirmRegenerateZip(): void {
+    if (!this.selectedFolder) return;
+    
+    this.showRegenerateDialog = false;
+    this.isGeneratingZip = true;
+    this.showNotification('Preparing ZIP file. This may take a minute...', 'info');
+
+    this.clientEventService.generateFolderZip(this.eventId, this.selectedFolder).subscribe({
+      next: (res) => {
+        this.isGeneratingZip = false;
+        this.showNotification('ZIP generated and ready for clients to download!', 'success');
+        
+        // Update local folder state
+        const folder = this.activeFolderObj;
+        if (folder) folder.hasZip = true;
+      },
+      error: (err) => {
+        this.isGeneratingZip = false;
+        this.showNotification(err.error?.message || 'Failed to generate ZIP. Please check logs.', 'error');
+      }
+    });
+  }
+
   /* ── Lightbox ── */
   openLightbox(image: ClientEventImage): void {
     const idx = this.images.findIndex((img) => img._id === image._id);
@@ -664,19 +715,27 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   downloadFolder(): void {
-    if (!this.images.length || !this.selectedFolder) return;
-    const folderImages = this.images.map((img) => ({
-      url: this.getFullUrl(img.url),
-      originalName: img.originalName,
-    }));
-    this.downloadService.downloadFolderAsZip(folderImages, this.selectedFolder);
+    if (!this.selectedFolder || !this.images.length) return;
+
+    if (!this.activeFolderObj?.hasZip) {
+      this.showNotification('This folder is not ready for download yet. Please generate the ZIP first.', 'error');
+      return;
+    }
+
+    const token = isPlatformBrowser(this.platformId) ? localStorage.getItem('bakr_token') : '';
+    const downloadUrl = `${environment.apiUrl}/client-events/${this.eventId}/folders/${this.selectedFolder}/download${token ? '?token=' + encodeURIComponent(token) : ''}`;
+    
+    if (isPlatformBrowser(this.platformId)) {
+      window.location.assign(downloadUrl);
+    }
   }
 
   onDownloadDismissed(): void {
-    if (this.downloadState.finalBlobUrl) {
-      URL.revokeObjectURL(this.downloadState.finalBlobUrl);
-    }
-    this.downloadState = { ...this.downloadState, visible: false, finalBlobUrl: undefined, finalFilename: undefined };
+    this.downloadService.cleanup();
+    this.downloadState = { ...this.downloadState, visible: false, readyToSave: false };
+  }
+  onDownloadSave(): void {
+    this.downloadService.triggerSave();
   }
 
   onRetryFailedDownloads(failedImages: any[]): void {

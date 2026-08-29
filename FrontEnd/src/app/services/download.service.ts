@@ -11,9 +11,7 @@ export interface DownloadProgress {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
-  finalBlobUrl?: string;
-  finalFilename?: string;
-  
+  readyToSave: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +19,10 @@ export class DownloadService {
   private platformId = inject(PLATFORM_ID);
 
   progress$ = new Subject<DownloadProgress>();
+
+  /** Blob + filename held privately — never exposed to Angular templates */
+  private pendingBlob: Blob | null = null;
+  private pendingFilename: string = '';
 
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -81,6 +83,7 @@ export class DownloadService {
       done: false,
       error: null,
       failedImages: [],
+      readyToSave: false,
     };
     this.progress$.next({ ...state });
 
@@ -135,11 +138,11 @@ export class DownloadService {
 
         const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
         const zipName = `${folderName.replace(/[^a-zA-Z0-9-_ ]/g, '_')}.zip`;
-        
-        state.finalBlobUrl = URL.createObjectURL(zipBlob);
-        state.finalFilename = zipName;
-        // Notice: We DO NOT call this.saveBlob() anymore. 
-        // We wait for the user to explicitly tap the "Save to Device" button.
+
+        // Store blob privately in the service — NOT in Angular state
+        this.pendingBlob = zipBlob;
+        this.pendingFilename = zipName;
+        state.readyToSave = true;
       }
 
       state.percent = 100;
@@ -152,10 +155,36 @@ export class DownloadService {
     }
   }
 
+  /**
+   * Called when the user taps "Save to Device".
+   * This MUST be entirely synchronous so iOS Safari registers it as a direct user gesture,
+   * otherwise it may kill the tab/reload the page.
+   */
+  triggerSave(): void {
+    if (!this.pendingBlob || !this.pendingFilename) return;
+
+    const blob = this.pendingBlob;
+    const filename = this.pendingFilename;
+
+    this.saveBlob(blob, filename);
+    // Don't release the blob immediately; let the browser process the download first
+  }
+
+  /**
+   * Clean up the pending blob when the modal is dismissed.
+   */
+  cleanup(): void {
+    this.releasePendingBlob();
+  }
+
+  private releasePendingBlob(): void {
+    this.pendingBlob = null;
+    this.pendingFilename = '';
+  }
+
   private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
 
-    // Modern iOS Safari (13+) and all other browsers fully support <a download>
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
@@ -165,6 +194,7 @@ export class DownloadService {
     document.body.removeChild(a);
     
     // Revoke after a delay to allow download to start
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    setTimeout(() => URL.revokeObjectURL(url), 20_000);
   }
 }
+

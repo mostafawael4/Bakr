@@ -10,8 +10,7 @@ export interface DownloadModalState {
   done: boolean;
   error: string | null;
   failedImages: { url: string; originalName: string }[];
-  finalBlobUrl?: string;
-  finalFilename?: string;
+  readyToSave: boolean;
 }
 
 @Component({
@@ -31,13 +30,33 @@ export class DownloadModalComponent {
     done: false,
     error: null,
     failedImages: [],
+    readyToSave: false,
   };
 
   @Output() dismissed = new EventEmitter<void>();
   @Output() retryFailed = new EventEmitter<{ url: string; originalName: string }[]>();
+  @Output() save = new EventEmitter<void>();
+
+  minimized = false;
+  saving = false;
 
   dismiss(): void {
+    this.minimized = false;
+    this.saving = false;
     this.dismissed.emit();
+  }
+
+  onSave(): void {
+    this.saving = true;
+    this.save.emit();
+    // Stop the spinner after the browser initiates the download
+    setTimeout(() => {
+      this.saving = false;
+    }, 1500);
+  }
+
+  toggleMinimize(): void {
+    this.minimized = !this.minimized;
   }
 
   onRetryFailed(): void {

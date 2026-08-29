@@ -26,13 +26,14 @@ if (Credentials.NODE_ENV === 'production') {
       maxFiles: '30d',
     }),
   );
-} else {
-  transports.push(
-    new winston.transports.Console({
-      format: combine(colorize(), simple()),
-    }),
-  );
 }
+
+// Always log to console in Railway/Dev
+transports.push(
+  new winston.transports.Console({
+    format: combine(colorize(), simple()),
+  }),
+);
 
 const logger = winston.createLogger({
   level: 'info',

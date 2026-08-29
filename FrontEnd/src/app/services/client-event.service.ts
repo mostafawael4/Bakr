@@ -26,6 +26,7 @@ export interface ClientEventFolder {
   count: number;
   coverImage: string | null;
   coverImageId?: string | null;
+  hasZip?: boolean;
 }
 
 export interface ClientEventImage {
@@ -115,6 +116,14 @@ export class ClientEventService {
       `${this.url}/${eventId}/folders/${encodeURIComponent(folderKey)}/cover`,
       { imageId },
       { withCredentials: true },
+    );
+  }
+
+  generateFolderZip(eventId: string, folderKey: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.post<{ ok: boolean; message: string }>(
+      `${this.url}/${eventId}/folders/${encodeURIComponent(folderKey)}/zip`,
+      {},
+      { withCredentials: true }
     );
   }
 

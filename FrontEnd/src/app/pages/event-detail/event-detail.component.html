@@ -123,19 +123,49 @@
 
 <!-- Content (Active Folder) -->
 <div class="folders-container">
+
+  <!-- Notification Toast -->
+  @if (notificationMessage) {
+    <div class="notification-toast" [ngClass]="notificationType">
+      {{ notificationMessage }}
+      <button class="close-btn" (click)="notificationMessage = null">&times;</button>
+    </div>
+  }
+
+  @if (showRegenerateDialog) {
+  <app-confirm-dialog
+    title="Regenerate ZIP"
+    message="You have already generated a ZIP for this folder. Do you want to generate it again? This will overwrite the old one."
+    confirmText="Regenerate"
+    [visible]="true"
+    [loading]="isGeneratingZip"
+    (confirmed)="confirmRegenerateZip()"
+    (cancelled)="showRegenerateDialog = false"
+  />
+  }
+
   @if (selectedFolder) {
     <section [id]="'folder-' + selectedFolder" class="folder-section">
       <div class="section-header">
         <h2>{{ selectedFolder }}</h2>
         <div class="section-actions">
-          <button class="btn-download" (click)="downloadFolder()">
-            Download Folder
+          <button 
+            class="btn-action btn-download" 
+            [class.disabled]="!activeFolderObj?.hasZip"
+            (click)="downloadFolder()"
+            [title]="!activeFolderObj?.hasZip ? 'ZIP not ready yet' : ''"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            {{ !activeFolderObj?.hasZip ? 'ZIP Not Ready' : 'Download Folder' }}
           </button>
           @if (isAdmin) {
-            <button class="btn-upload" (click)="openFileDialog()">
+            <button class="btn-action btn-generate" (click)="generateFolderZip()" [disabled]="isGeneratingZip">
+              {{ isGeneratingZip ? 'Generating...' : (activeFolderObj?.hasZip ? 'Regenerate ZIP' : 'Generate ZIP') }}
+            </button>
+            <button class="btn-action btn-upload" (click)="openFileDialog()">
               Upload Images
             </button>
-            <button class="btn-delete" (click)="askDeleteFolder()">
+            <button class="btn-action btn-delete" (click)="askDeleteFolder()">
               Delete Folder
             </button>
           }
@@ -242,4 +272,5 @@
   [state]="downloadState" 
   (dismissed)="onDownloadDismissed()"
   (retryFailed)="onRetryFailedDownloads($event)"
+  (save)="onDownloadSave()"
 />

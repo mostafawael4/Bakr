@@ -312,6 +312,12 @@
     padding: 0 1rem;
     .nav-content {
       gap: 1rem;
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
     .nav-brand {
       display: none; // hide brand on mobile to save space for links
@@ -358,8 +364,8 @@
     
     .section-actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 0.5rem;
+      flex-wrap: wrap;
       
       button {
         padding: 0.4rem 0.8rem;
@@ -409,7 +415,6 @@
 
 .folder-input-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: stretch;
 }
