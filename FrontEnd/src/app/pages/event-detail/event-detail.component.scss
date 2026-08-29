@@ -358,6 +358,7 @@
     
     .section-actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       
       button {
@@ -408,6 +409,7 @@
 
 .folder-input-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: stretch;
 }
