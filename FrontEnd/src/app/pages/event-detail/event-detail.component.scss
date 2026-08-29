@@ -312,6 +312,12 @@
     padding: 0 1rem;
     .nav-content {
       gap: 1rem;
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
     .nav-brand {
       display: none; // hide brand on mobile to save space for links
@@ -339,76 +345,60 @@
 
   .section-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    
-    h2 {
-      font-family: var(--font-serif);
-      font-size: 2rem;
-      color: var(--color-interactive);
-    }
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-wrap: wrap;
+    gap: 1rem;
 
-    .notification {
-      padding: 0.5rem 1rem;
-      background: rgba(var(--color-interactive-rgb), 0.1);
-      color: var(--color-interactive);
-      border-radius: 4px;
-      font-size: 0.85rem;
+    h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--color-heading);
+      margin: 0;
     }
     
     .section-actions {
       display: flex;
-      gap: 0.75rem;
-      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
       
-      .btn-action {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: 4px;
-        font-family: var(--font-sans);
-        font-size: 0.7rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+      button {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
         cursor: pointer;
-        transition: all 0.2s ease;
-        background-color: transparent;
+        font-family: inherit;
+        border: 1px solid var(--color-border);
+        background: transparent;
+        color: var(--color-heading);
+        transition: all 0.2s;
         
-        &.btn-download {
+        &:hover {
+          border-color: var(--color-interactive);
+          color: var(--color-interactive);
+        }
+        
+        &.btn-upload {
           background-color: var(--color-interactive);
           color: var(--color-surface);
-          border: 1px solid var(--color-interactive);
-        }
-        &.btn-generate {
-          color: var(--color-interactive);
-          border: 1px solid var(--color-interactive);
-        }
-        &.btn-upload {
-          color: var(--color-heading);
-          border: 1px solid var(--color-border);
-        }
-        &.btn-delete {
-          color: #dc3545;
-          border: 1px solid transparent;
+          border-color: var(--color-interactive);
           &:hover {
-            background-color: rgba(220, 53, 69, 0.1);
+            background-color: var(--color-interactive-hover);
           }
         }
 
-        &:hover:not(:disabled):not(.disabled) {
-          filter: brightness(0.9);
-          transform: translateY(-1px);
-        }
-        &:active:not(:disabled):not(.disabled) {
-          transform: translateY(0);
-        }
-        &.disabled, &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          filter: grayscale(1);
+        &.btn-delete {
+          color: #dc2626;
+          &:hover {
+            background-color: #dc2626;
+            color: #fff;
+            border-color: #dc2626;
+          }
         }
       }
     }
@@ -669,47 +659,4 @@
     opacity: 1;
     transform: translateY(0);
   }
-}.notification-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10000;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  animation: slideDown 0.3s ease-out;
-
-  &.success {
-    border-left: 4px solid #28a745;
-  }
-  &.error {
-    border-left: 4px solid #dc3545;
-  }
-  &.info {
-    border-left: 4px solid var(--color-interactive);
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    cursor: pointer;
-    color: inherit;
-    opacity: 0.6;
-    &:hover { opacity: 1; }
-  }
-}
-
-@keyframes slideDown {
-  from { top: -50px; opacity: 0; }
-  to { top: 20px; opacity: 1; }
 }
